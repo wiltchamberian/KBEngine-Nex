@@ -170,7 +170,7 @@
     <Link>
       <AdditionalOptions>/ignore:4049
 /ignore:4217 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>crypt32.lib;db_mysql.lib;db_redis.lib;apr-1.lib;aprutil-1.lib;log4cxx.lib;expat.lib;python37.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;db_interface.lib;server.lib;xml.lib;common.lib;fmt.lib;helper.lib;math.lib;network.lib;libcurl.lib;thread.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>crypt32.lib;db_mysql.lib;db_redis.lib;apr-1.lib;aprutil-1.lib;log4cxx.lib;expat.lib;python313.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;db_interface.lib;server.lib;xml.lib;common.lib;fmt.lib;helper.lib;math.lib;network.lib;libcurl.lib;thread.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -199,7 +199,7 @@
     <Link>
       <AdditionalOptions>/ignore:4049
 /ignore:4217 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>openssl_uptable.obj;crypt32.lib;db_mysql.lib;db_redis.lib;apr-1.lib;aprutil-1.lib;log4cxx.lib;expat.lib;python37.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;db_interface.lib;server.lib;xml.lib;common.lib;fmt.lib;helper.lib;math.lib;network.lib;libcurl.lib;thread.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>openssl_uptable.obj;crypt32.lib;db_mysql.lib;db_redis.lib;apr-1.lib;aprutil-1.lib;log4cxx.lib;expat.lib;python313.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;db_interface.lib;server.lib;xml.lib;common.lib;fmt.lib;helper.lib;math.lib;network.lib;libcurl.lib;thread.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>

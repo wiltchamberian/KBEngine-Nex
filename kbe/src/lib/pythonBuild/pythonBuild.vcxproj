@@ -141,6 +141,26 @@ copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\pyconfig.h" "$(SolutionDir)lib\p
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PreBuildEvent>
+      <Command>call "$(SolutionDir)lib\python\PCbuild\build.bat"  -c Release</Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\python313.lib" "$(SolutionDir)libs"
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\python313.exp" "$(SolutionDir)libs"
+
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\python313.dll" "$(SolutionDir)..\bin\server"
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\python313.ilk" "$(SolutionDir)..\bin\server"
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\python313.pdb" "$(SolutionDir)..\bin\server"
+
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\vcruntime140.dll" "$(SolutionDir)..\bin\server"
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\vcruntime140_1.dll" "$(SolutionDir)..\bin\server"
+
+xcopy "$(SolutionDir)lib\python\Lib" "$(SolutionDir)..\res\scripts\common\Lib" /Y /i /e
+xcopy "$(SolutionDir)lib\python\PCbuild\amd64" "$(SolutionDir)..\res\scripts\common\DLLs" /Y /i /e
+
+copy /Y "$(SolutionDir)lib\python\PCbuild\amd64\pyconfig.h" "$(SolutionDir)lib\python\Include"
+</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
   </ItemGroup>

@@ -230,7 +230,7 @@
       <AdditionalOptions>/ignore:4049
 /ignore:4217
 /ignore:4244 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>apr-1.lib;aprutil-1.lib;log4cxx.lib;entitydef.lib;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python37.lib;pyscript.lib;xml.lib;common.lib;fmt.lib;helper.lib;network.lib;libcurl.lib;thread.lib;client_lib.lib;expat.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>apr-1.lib;aprutil-1.lib;log4cxx.lib;entitydef.lib;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python313.lib;pyscript.lib;xml.lib;common.lib;fmt.lib;helper.lib;network.lib;libcurl.lib;thread.lib;client_lib.lib;expat.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../../libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>expat.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -274,7 +274,7 @@
       <AdditionalOptions>/ignore:4049
 /ignore:4217
 /ignore:4244 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>apr-1.lib;aprutil-1.lib;log4cxx.lib;entitydef.lib;openssl_uptable.obj;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python37.lib;pyscript.lib;xml.lib;common.lib;fmt.lib;helper.lib;network.lib;libcurl.lib;thread.lib;client_lib.lib;expat.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>apr-1.lib;aprutil-1.lib;log4cxx.lib;entitydef.lib;openssl_uptable.obj;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python313.lib;pyscript.lib;xml.lib;common.lib;fmt.lib;helper.lib;network.lib;libcurl.lib;thread.lib;client_lib.lib;expat.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../../libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>expat.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
