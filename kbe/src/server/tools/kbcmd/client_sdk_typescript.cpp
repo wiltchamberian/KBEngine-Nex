@@ -1894,33 +1894,38 @@ bool ClientSDKTypeScript::writeEntityModuleBegin(ScriptDefModule* pEntityScriptD
 	std::string newModuleName = fmt::format("{}{}", pEntityScriptDefModule->getName(), moduleSuffix);
 
 	sourcefileBody_ = headerBody;
-	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", fmt::format("\tPlease inherit this module, such as: (class {} : {}{})\n",
+	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", fmt::format("\tPlease inherit this module, such as: (class {} extends {}{})\n",
 		pEntityScriptDefModule->getName(), pEntityScriptDefModule->getName(), moduleSuffix));
 
-	sourcefileBody_ += "namespace KBEngine\n{\n";
-	sourcefileBody_ += "\tusing UnityEngine;\n";
-	sourcefileBody_ += "\tusing System;\n";
-	sourcefileBody_ += "\tusing System.Collections;\n";
-	sourcefileBody_ += "\tusing System.Collections.Generic;\n\n";
+	sourcefileBody_ += R"delimiter(
+import Entity from './Entity';
+import { EntityComponent } from './EntityComponent';
+import { EntityCall } from './EntityCall';
+import MemoryStream from './MemoryStream';
+import * as DataTypes from './DataTypes';
 
-	sourcefileBody_ += std::string("\t// defined in */scripts/entity_defs/") + pEntityScriptDefModule->getName() + ".def\n";
+import { EntityBaseEntityCall_AccountBase, EntityCellEntityCall_AccountBase } from './EntityCallAccountBase';
+import { Property } from './Property';
+
+)delimiter";
+	sourcefileBody_ += std::string("// defined in */scripts/entity_defs/") + pEntityScriptDefModule->getName() + ".def\n";
 
 	if (pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\tpublic abstract class {} : EntityComponent\n\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("export abstract class {} extends EntityComponent\n\t{{\n", newModuleName);
 
 		// Ğ´entityCallÊôĞÔ
-		sourcefileBody_ += fmt::format("\t\tpublic EntityBaseEntityCall_{} baseEntityCall = null;\n", newModuleName);
-		sourcefileBody_ += fmt::format("\t\tpublic EntityCellEntityCall_{} cellEntityCall = null;\n\n", newModuleName);
+		sourcefileBody_ += fmt::format("\tpublic baseEntityCall:EntityBaseEntityCall_{} | null = null;\n", newModuleName);
+		sourcefileBody_ += fmt::format("\tpublic cellEntityCall:EntityCellEntityCall_{} | null = null;\n\n", newModuleName);
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t// Please inherit and implement \"class {} : {}\"\n", pEntityScriptDefModule->getName(), newModuleName);
-		sourcefileBody_ += fmt::format("\tpublic abstract class {} : Entity\n\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("// Please inherit and implement \"class {} extends {}\"\n", pEntityScriptDefModule->getName(), newModuleName);
+		sourcefileBody_ += fmt::format("export abstract class {} extends Entity\n\t{{\n", newModuleName);
 
 		// Ğ´entityCallÊôĞÔ
-		sourcefileBody_ += fmt::format("\t\tpublic EntityBaseEntityCall_{} baseEntityCall = null;\n", newModuleName);
-		sourcefileBody_ += fmt::format("\t\tpublic EntityCellEntityCall_{} cellEntityCall = null;\n\n", newModuleName);
+		sourcefileBody_ += fmt::format("\tpublic baseEntityCall:EntityBaseEntityCall_{} | null = null;\n", newModuleName);
+		sourcefileBody_ += fmt::format("\tpublic cellEntityCall:EntityCellEntityCall_{} | null = null;\n\n", newModuleName);
 	}
 
 	return true;
@@ -2680,7 +2685,7 @@ bool ClientSDKTypeScript::writeEntityPropertyComponent(ScriptDefModule* pEntityS
 {
 	EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 	
-	sourcefileBody_ += fmt::format("\t\tpublic {}{} {} = null;\n", pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}{} {} = null;//111111\n", pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getName(),
 		pEntityComponentType->pScriptDefModule()->getName());
 
 	return true;
