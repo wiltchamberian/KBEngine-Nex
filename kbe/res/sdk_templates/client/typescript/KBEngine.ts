@@ -1,21 +1,18 @@
 import KBEDebug from "./KBEDebug";
-import KBEEvent from "./Event";
-import NetworkInterface from "./NetworkInterface";
-import Messages from "./Messages";
-import Bundle from "./Bundle";
-import MemoryStream from "./MemoryStream";
-import { UTF8ArrayToString } from "./KBEEncoding";
-import * as DataTypes from "./DataTypes";
-import  EntityDef  from "./EntityDef";
-import {INT64, UINT64} from "./DataTypes";
+import * as KBEEncoding from "./KBEEncoding";
 
-import Entity from "./Entity";
-import * as KBEMath from "./KBEMath";
 import { ScriptModule } from "./ScriptModule";
 import { Property } from "./Property";
 import { Method } from "./Method";
-import { Vector2, Vector3 } from "./KBEMath";
+import KBEEvent from "./Event";
+import * as ExportEntity from "./ExportEntity";
+import { Vector2, Vector3, Vector4, Int8ToAngle,AngleToInt8 } from "./KBEMath";
 
+import { ServerErrorDescrs } from "./ServerErrorDescrs";
+import Messages,{ Message } from "./Messages";
+import EntityDef from "./EntityDef";
+
+//#region KBEngine app
 export class KBEngineArgs {
     address: string = "127.0.0.1";
     port: number = 20013;
@@ -51,7 +48,7 @@ export class KBEngineApp {
     private serverErrorsDescrImported = false;
     private entitydefImported = false;
 
-    private serverErrors: { [key: number]: ServerError } = {};
+    private serverErrors: ServerErrorDescrs = new ServerErrorDescrs();
 
     // 登录loginapp的地址
     private serverAddress: string = "";
@@ -84,7 +81,7 @@ export class KBEngineApp {
     entities: { [id: number]: Entity } = {};
     private bufferedCreateEntityMessage: { [id: number]: MemoryStream } = {};
     entity_id: number = 0;
-    private entity_uuid: UINT64 | undefined;
+    private entity_uuid: DataTypes.KB_UINT64 | undefined;    
     private entity_type: string = "";
     private controlledEntities: Array<Entity> = new Array<Entity>();
     private entityIDAliasIDList: Array<number> = new Array<number>();
@@ -97,7 +94,7 @@ export class KBEngineApp {
     isOnInitCallPropertysSetMethods = true;
 
     // 当前玩家最后一次同步到服务端的位置与朝向与服务端最后一次同步过来的位置
-    entityServerPos = new KBEMath.Vector3(0.0, 0.0, 0.0);
+    entityServerPos = new Vector3(0.0, 0.0, 0.0);
 
     // space的数据，具体看API手册关于spaceData
     // https://github.com/kbengine/kbengine/tree/master/docs/api
@@ -244,7 +241,8 @@ export class KBEngineApp {
     private ServerErr(id: number)
     {
         // todo 这里要改，从生成的文件里获取
-        return this.serverErrors[id].name + "[" + this.serverErrors[id].description + "]";
+        let err = this.serverErrors.serverErr(id);
+        return err?.name + "[" + err?.descr + "]";
     }
 
     /**
@@ -287,7 +285,7 @@ export class KBEngineApp {
         // todo 需要实现
         // KBEngine.Event.clearFiredEvents(); 
 
-        this.clearEntities(true);
+        this.ClearEntities(true);
 
         this.networkInterface.Close();
 
@@ -311,7 +309,7 @@ export class KBEngineApp {
         this.entity_type = "";
 
         // 当前玩家最后一次同步到服务端的位置与朝向与服务端最后一次同步过来的位置
-        this.entityServerPos = new KBEMath.Vector3(0.0, 0.0, 0.0);
+        this.entityServerPos = new Vector3(0.0, 0.0, 0.0);
 
         // 客户端所有的实体
         this.entityIDAliasIDList = [];
@@ -334,38 +332,6 @@ export class KBEngineApp {
         this.component = "client";
     }
 
-
-
-    clearEntities(isall: boolean) {
-        this.controlledEntities = [];
-
-        if (!isall) {
-            let entity = this.Player();
-
-            for (let key in this.entities) {
-                if (key == entity.id.toString())
-                    continue;
-
-                if (this.entities[key].inWorld)
-                    this.entities[key].LeaveWorld();
-
-                this.entities[key].Destroy();
-            }
-
-            this.entities = {};
-            this.entities[entity.id] = entity;
-        }
-        else {
-            for (let key in this.entities) {
-                if (this.entities[key].inWorld)
-                    this.entities[key].LeaveWorld();
-
-                this.entities[key].Destroy();
-            }
-
-            this.entities = {};
-        }
-    }
 
     FindEntity(entityID: number) {
         return this.entities[entityID];
@@ -705,7 +671,7 @@ export class KBEngineApp {
     Client_onLoginFailed(stream: MemoryStream) {
         var failedcode = stream.ReadUint16();
         this.serverdatas = stream.ReadBlob();
-        KBEDebug.ERROR_MSG("KBEngineApp::Client_onLoginFailed: failedcode(" + this.serverErrors[failedcode].name + "), datas(" + this.serverdatas.length + ")!");
+        KBEDebug.ERROR_MSG("KBEngineApp::Client_onLoginFailed: failedcode(" + this.serverErrors.serverErr(failedcode)?.name + "), datas(" + this.serverdatas.length + ")!");
         KBEEvent.Fire("onLoginFailed", failedcode);
     }
 
@@ -752,12 +718,12 @@ export class KBEngineApp {
 
 
     Client_onLoginBaseappFailed(failedcode) {
-        KBEDebug.ERROR_MSG("KBEngineApp::Client_onLoginBaseappFailed: failedcode(" + this.serverErrors[failedcode].name + ")!");
+        KBEDebug.ERROR_MSG("KBEngineApp::Client_onLoginBaseappFailed: failedcode(" + this.serverErrors.serverErr(failedcode)?.name + ")!");
         KBEEvent.Fire("onLoginBaseappFailed", failedcode);
     }
 
     Client_onReloginBaseappFailed(failedcode) {
-        KBEDebug.ERROR_MSG("KBEngineApp::Client_onReloginBaseappFailed: failedcode(" + this.serverErrors[failedcode].name + ")!");
+        KBEDebug.ERROR_MSG("KBEngineApp::Client_onReloginBaseappFailed: failedcode(" + this.serverErrors.serverErr(failedcode)?.name + ")!");
         KBEEvent.Fire("onReloginBaseappFailed", failedcode);
     }
 
@@ -809,46 +775,10 @@ export class KBEngineApp {
             this.bufferedCreateEntityMessage[eid] = tempStream;
             return;
         }
-
-        let module: ScriptModule = EntityDef.moduledefs[entity.className];
-        while (stream.Length() > 0) {
-            let utype = 0;
-            if (module.usePropertyDescrAlias) {
-                stream.ReadInt8()
-                utype = stream.ReadUint8();
-            }
-            else {
-                stream.ReadUint16()
-                utype = stream.ReadUint16();
-            }
-
-            let propertyData: Property = module.propertys[utype];
-            if (!propertyData || !propertyData.utype) {
-                KBEDebug.WARNING_MSG("not found propertyData", utype)
-                return
-            }
-            let val = propertyData.utype.CreateFromStream(stream);
-            let oldval = entity.GetPropertyValue(propertyData.name);
-            KBEDebug.DEBUG_MSG("KBEngineApp::OnUpdatePropertys: entity %s(id:%d, name:%s change oldval(%s) to val(%s), IsBase(%s),inited(%s).",
-                entity.className, eid, propertyData.name, oldval, val, propertyData.isBase(), entity.inited);
-
-            entity.SetPropertyValue(propertyData.name, val);
-
-            // 触发set_*方法
-            if (propertyData.setHandler !== undefined) {
-                if (propertyData.isBase()) {
-                    if (entity.inited)
-                        propertyData.setHandler.call(entity, oldval);
-                }
-                else {
-                    if (entity.inWorld)
-                        propertyData.setHandler.call(entity, oldval);
-                }
-            }
-        }
+        entity.onUpdatePropertys(stream);
     }
 
-    Client_onCreatedProxies(rndUUID: DataTypes.UINT64, eid: number, entityType: string) {
+    Client_onCreatedProxies(rndUUID: DataTypes.KB_UINT64, eid: number, entityType: string) {
         KBEDebug.INFO_MSG("KBEngineApp::Client_onCreatedProxies: uuid:(%s) eid(%d), entityType(%s)!", rndUUID.toString(), eid, entityType);
         this.entity_uuid = rndUUID;
         this.entity_id = eid;
@@ -902,34 +832,8 @@ export class KBEngineApp {
             KBEDebug.ERROR_MSG("KBEngineApp::Client_onRemoteMethodCall: entity(%d) not found!", eid);
             return;
         }
-
-        let scriptModule: ScriptModule = EntityDef.moduledefs[entity.className];
-        let methodUtype: number = 0;
-        if (scriptModule.useMethodDescrAlias) {
-            stream.ReadInt8()
-            methodUtype = stream.ReadUint8();
-        }
-        else {
-            stream.ReadUint16()
-            methodUtype = stream.ReadUint16();
-        }
-
-        let defMethod: Method = scriptModule.methods[methodUtype];
-
-        KBEDebug.ERROR_MSG("KBEngineApp::OnRemoteMethodCall: methodUtype(%d), methodName(%s), use alias(%s).",
-            methodUtype, defMethod.name, scriptModule.useMethodDescrAlias);
-
-        let args: any[] = [];
-        for (let i = 0; i < defMethod.args.length; i++) {
-            args.push(defMethod.args[i].CreateFromStream(stream));
-        }
-
-        if (entity[defMethod.name] !== undefined) {
-            entity[defMethod.name].apply(entity, args);
-        }
-        else {
-            KBEDebug.ERROR_MSG("KBEngineApp::Client_onRemoteMethodCall: entity(%d) not found method(%s)!", eid, defMethod.name);
-        }
+        entity.onRemoteMethodCall(stream);
+      
     }
 
     Client_onRemoteMethodCall(stream: MemoryStream) {
@@ -950,12 +854,12 @@ export class KBEngineApp {
         if (this.entity_id > 0 && this.entity_id !== eid)
             this.entityIDAliasIDList.push(eid);
 
-        let entityType = 0;
+        let uentityType = 0;
         let useScriptModuleAlias: boolean = Object.keys(EntityDef.moduledefs).length > 255;
         if (useScriptModuleAlias)
-            entityType = stream.ReadUint16();
+            uentityType = stream.ReadUint16();
         else
-            entityType = stream.ReadUint8();
+            uentityType = stream.ReadUint8();
 
         let isOnGround: number = 1;
         if (stream.Length() > 0)
@@ -969,6 +873,7 @@ export class KBEngineApp {
                 return;
             }
 
+            let entityType  = EntityDef.idmoduledefs[uentityType].name
             let module: ScriptModule = EntityDef.moduledefs[entityType]
             if (module === undefined) {
                 KBEDebug.ERROR_MSG("KBEngine::Client_onEntityEnterWorld: not found module(" + entityType + ")!");
@@ -1201,7 +1106,7 @@ export class KBEngineApp {
     }
 
     Client_onKicked(failedcode: number) {
-        KBEDebug.ERROR_MSG("KBEngineApp::Client_onKicked: failedcode(" + this.serverErrors[failedcode].name + ")!");
+        KBEDebug.ERROR_MSG("KBEngineApp::Client_onKicked: failedcode(" + this.serverErrors.serverErr(failedcode)?.name + ")!");
         KBEEvent.Fire("onKicked", failedcode);
     }
 
@@ -1212,7 +1117,7 @@ export class KBEngineApp {
         KBEEvent.Fire("onCreateAccountResult", retcode, datas);
 
         if (retcode != 0) {
-            KBEDebug.ERROR_MSG("KBEngineApp::Client_onCreateAccountResult: " + this.userName + " create is failed! code=" + this.serverErrors[retcode].name + "!");
+            KBEDebug.ERROR_MSG("KBEngineApp::Client_onCreateAccountResult: " + this.userName + " create is failed! code=" + this.serverErrors.serverErr(retcode)?.name + "!");
             return;
         }
 
@@ -1347,17 +1252,17 @@ export class KBEngineApp {
 
         if (roll != KBE_FLT_MAX) {
             changeDirection = true;
-            entity.direction.x = isOptimized? KBEMath.Int8ToAngle(roll, false)  : roll;
+            entity.direction.x = isOptimized? Int8ToAngle(roll, false)  : roll;
         }
 
         if (pitch != KBE_FLT_MAX) {
             changeDirection = true;
-            entity.direction.y = isOptimized? KBEMath.Int8ToAngle(pitch, false)  : pitch;
+            entity.direction.y = isOptimized? Int8ToAngle(pitch, false)  : pitch;
         }
 
         if (yaw != KBE_FLT_MAX) {
             changeDirection = true;
-            entity.direction.z = isOptimized? KBEMath.Int8ToAngle(yaw, false)  : yaw;
+            entity.direction.z = isOptimized? Int8ToAngle(yaw, false)  : yaw;
         }
 
         let done = false;
@@ -1940,3 +1845,1978 @@ export class KBEngineApp {
 
 
 }
+
+//#endregion
+
+
+//#region KBEngine Bundle
+const MAX_BUFFER: number = 1460 * 4;
+const MESSAGE_ID_LENGTH: number = 2;
+
+export class Bundle
+{
+    private stream: MemoryStream = new MemoryStream(MAX_BUFFER);
+    private streams: Array<MemoryStream> = new Array<MemoryStream>();
+
+    private messageNum = 0;
+    private messageLengthBuffer: Uint8Array | null = null;
+    private messageLength = 0;
+    private message: Message | null = null;
+
+    constructor()
+    {
+    }
+
+    WriteMessageLength(len: number)
+    {
+        if(this.messageLengthBuffer)
+        {
+            this.messageLengthBuffer[0] = len & 0xff;
+            this.messageLengthBuffer[1] = (len >> 8) & 0xff;
+        }
+    }
+
+    Fini(isSend: boolean)
+    {
+        if(isSend)
+            KBEDebug.DEBUG_MSG("Bundle::Fini............message(%s:%s):messageNum(%d).stream length(%d).", this.message!.name, isSend, this.messageNum, this.stream.Length());
+
+        if(this.messageNum > 0)
+        {
+            this.WriteMessageLength(this.messageLength);
+            if(this.stream)
+            {
+                this.streams.push(this.stream);
+            }
+        }
+
+        if(isSend)
+        {
+            this.messageLengthBuffer = null;
+            this.messageNum = 0;
+            this.message = null;
+        }
+        this.messageLength = 0;
+    }
+
+    NewMessage(message: Message)
+    {
+        this.Fini(false);
+
+        this.messageNum += 1;
+        this.message = message;
+
+        if(message.msglen == -1)
+        {
+            this.messageLengthBuffer = new Uint8Array(this.stream.GetRawBuffer(), this.stream.wpos + MESSAGE_ID_LENGTH, 2);
+        }
+
+        this.stream.WriteUint16(message.id);
+        
+        if(this.messageLengthBuffer)
+        {
+            this.WriteUint16(0);
+            this.messageLengthBuffer[0] = 0;
+            this.messageLengthBuffer[1] = 0;
+            this.messageLength = 0;
+        }
+    }
+
+    Send(networkInterface: NetworkInterface)
+    {
+        this.Fini(true);
+
+        for(let stream of this.streams)
+        {
+            networkInterface.Send(stream.GetBuffer());
+        }
+
+        this.streams = new Array<MemoryStream>();
+        this.stream = new MemoryStream(MAX_BUFFER);
+    }
+
+    CheckStream(len: number)
+    {
+        if(len > this.stream.Space())
+        {
+            this.streams.push(this.stream);
+            this.stream = new MemoryStream(MAX_BUFFER);
+        }
+
+        this.messageLength += len;
+    }
+
+    WriteInt8(value: number)
+    {
+        this.CheckStream(1);
+        this.stream.WriteInt8(value);
+    }
+
+	WriteInt16(value: number)
+	{
+		this.CheckStream(2);
+		this.stream.WriteInt16(value);
+    }
+
+    WriteInt32(value: number)
+	{
+		this.CheckStream(4);
+		this.stream.WriteInt32(value);
+    }
+    
+    WriteInt64(value: DataTypes.KB_INT64)
+	{
+		this.CheckStream(8);
+		this.stream.WriteInt64(value);
+    }
+    
+    WriteUint8(value: number)
+    {
+        this.CheckStream(1);
+        this.stream.WriteUint8(value);
+    }
+
+    WriteUint16(value: number)
+    {
+        this.CheckStream(2);
+        this.stream.WriteUint16(value);
+    }
+
+    WriteUint32(value: number)
+    {
+        this.CheckStream(4);
+        this.stream.WriteUint32(value);
+    }
+
+    WriteUint64(value: DataTypes.KB_UINT64)  
+    {
+        this.CheckStream(8);
+        this.stream.WriteUint64(value);
+    }
+
+    WriteFloat(value: number)
+    {
+        this.CheckStream(4);
+        this.stream.WriteFloat(value);
+    }
+
+    WriteDouble(value: number)
+    {
+        this.CheckStream(8);
+        this.stream.WriteDouble(value);
+    }
+
+    WriteBlob(value: string|Uint8Array)
+    {
+        this.CheckStream(value.length + 4);
+        this.stream.WriteBlob(value);
+    }
+
+    WriteString(value: string)
+    {
+        this.CheckStream(value.length + 1);
+        this.stream.WriteString(value);
+    }
+
+    WriteUnicode(value: string)
+    {
+        this.stream.WriteBlob(value);
+    }
+}
+//#endregion
+
+
+//#region KBEngine DataTypes
+
+
+export namespace DataTypes{
+    const TWO_PWR_16_DBL = 1 << 16;
+    const TWO_PWR_32_DBL = TWO_PWR_16_DBL * TWO_PWR_16_DBL;
+
+    export class KB_INT64 {
+        low: number;
+        high: number;
+        private _isNegative: boolean;
+
+        constructor(low: number, high: number) {
+            this.low = low >>> 0;
+
+            // 这里的 >>> 0 不是为了去掉符号，而是为了确保 输入的 high 是 32 位无符号格式，也就是说你即使传入了负数，它会正确转为补码整数。
+            // 但注意：后续 this._isNegative 是根据 high >>> 0 的结果来判断是否带符号的，然后我们立刻做了补码还原。
+            this.high = high >>> 0;
+            this._isNegative = (this.high & 0x80000000) !== 0;
+
+            // 补码转正（存储结构中仍然保留原始补码）
+            if (this._isNegative) {
+                const notLow = (~this.low + 1) >>> 0;
+                const carry = notLow === 0 ? 1 : 0;
+                const notHigh = (~this.high + carry) >>> 0;
+                this.low = notLow;
+                this.high = notHigh;
+            }
+        }
+
+        toNumber(): number {
+            let val = this.high * TWO_PWR_32_DBL + this.low;
+            return this._isNegative ? -val : val;
+        }
+
+        toBigInt(): bigint {
+            let bi = (BigInt(this.high) << 32n) | BigInt(this.low);
+            return this._isNegative ? -bi : bi;
+        }
+
+        toString(radix: number = 10): string {
+            return this.toBigInt().toString(radix);
+        }
+
+        equals(other: KB_INT64): boolean {
+            return this.toBigInt() === other.toBigInt();
+        }
+
+        static fromNumber(num: number): KB_INT64 {
+            const isNegative = num < 0;
+            if (isNegative) num = -num;
+
+            const low = num >>> 0;
+            const high = Math.floor(num / TWO_PWR_32_DBL) >>> 0;
+            let int64 = new KB_INT64(low, high);
+
+            if (isNegative) {
+                let l = (~int64.low + 1) >>> 0;
+                let h = (~int64.high + (l === 0 ? 1 : 0)) >>> 0;
+                int64.low = l;
+                int64.high = h;
+                int64._isNegative = true;
+            }
+
+            return int64;
+        }
+
+        static fromBigInt(bi: bigint): KB_INT64 {
+            const isNegative = bi < 0n;
+            if (isNegative) bi = -bi;
+
+            let low = Number(bi & 0xFFFFFFFFn);
+            let high = Number((bi >> 32n) & 0xFFFFFFFFn);
+
+            let int64 = new KB_INT64(low, high);
+
+            if (isNegative) {
+                let l = (~int64.low + 1) >>> 0;
+                let h = (~int64.high + (l === 0 ? 1 : 0)) >>> 0;
+                int64.low = l;
+                int64.high = h;
+                int64._isNegative = true;
+            }
+
+            return int64;
+        }
+    }
+
+
+    export class KB_UINT64 {
+        low: number;
+        high: number;
+
+        constructor(low: number, high: number) {
+            this.low = low >>> 0;
+            this.high = high >>> 0;
+        }
+
+        toNumber(): number {
+            return this.high * TWO_PWR_32_DBL + this.low;
+        }
+
+        toBigInt(): bigint {
+            return (BigInt(this.high) << 32n) | BigInt(this.low);
+        }
+
+        toString(radix: number = 10): string {
+            return this.toBigInt().toString(radix);
+        }
+
+        equals(other: KB_UINT64): boolean {
+            return this.toBigInt() === other.toBigInt();
+        }
+
+        static fromNumber(num: number): KB_UINT64 {
+            const low = num >>> 0;
+            const high = Math.floor(num / TWO_PWR_32_DBL) >>> 0;
+            return new KB_UINT64(low, high);
+        }
+
+        static fromBigInt(bi: bigint): KB_UINT64 {
+            const low = Number(bi & 0xFFFFFFFFn);
+            const high = Number((bi >> 32n) & 0xFFFFFFFFn);
+            return new KB_UINT64(low, high);
+        }
+    }
+
+
+    export class NumberUtil {
+        static toUInt8(n: number): number {
+            return n & 0xFF;
+        }
+
+        static toUInt16(n: number): number {
+            return n & 0xFFFF;
+        }
+
+        static toUInt32(n: number): number {
+            return n >>> 0;
+        }
+
+        // 模拟 UInt64 返回 BigInt
+        static toUInt64(n: number | bigint): bigint {
+            return BigInt(n) & BigInt("0xFFFFFFFFFFFFFFFF");
+        }
+
+        static toInt8(n: number): number {
+            const val = n & 0xFF;
+            return val > 0x7F ? val - 0x100 : val;
+        }
+
+        static toInt16(n: number): number {
+            const val = n & 0xFFFF;
+            return val > 0x7FFF ? val - 0x10000 : val;
+        }
+
+        static toInt32(n: number): number {
+            return n | 0; // 强制转换为有符号 Int32
+        }
+
+        // 模拟 Int64 返回 BigInt
+        static toInt64(n: number | bigint): bigint {
+            const big = BigInt(n);
+            return big >= BigInt("0x8000000000000000")
+                ? big - BigInt("0x10000000000000000")
+                : big;
+        }
+
+        // 强制转为 Float32 精度
+        static toFloat(n: number): number {
+            const f32 = new Float32Array(1);
+            f32[0] = n;
+            return f32[0];
+        }
+
+        // JS number 就是 Double
+        static toDouble(n: number): number {
+            return n;
+        }
+    }
+
+
+    export class UINT64_OLD {
+        low: number;
+        high: number;
+
+        constructor(p_low: number, p_high: number) {
+            this.low = p_low >>> 0;
+            this.high = p_high;
+        }
+
+        toString() {
+            let low = this.low.toString(16);
+            let high = this.high.toString(16);
+
+            let result = "";
+            if (this.high > 0) {
+                result += high;
+                for (let i = 8 - low.length; i > 0; --i) {
+                    result += "0";
+                }
+            }
+
+            return result + low;
+        }
+
+        static BuildUINT64(data: number): KB_UINT64 {
+            let low = (data % TWO_PWR_32_DBL) | 0;
+            low >>>= 0;
+            let high = (data / TWO_PWR_32_DBL) | 0;
+            high >>>= 0;
+            //KBEDebug.WARNING_MSG("Datatypes::BuildUINT64:low:%s, low hex(%s);high:%s, high hex(%s).", low, low.toString(16), high, high.toString(16));
+            return new KB_UINT64(low, high);
+        }
+    }
+
+
+    function IsNumber(anyObject: any): boolean {
+        return typeof anyObject === "number" || typeof anyObject == 'boolean';
+    }
+
+    export abstract class DATATYPE_BASE {
+        static readonly FLOATE_MAX = Number.MAX_VALUE;
+
+        Bind(): void { }
+
+        CreateFromStream(stream: MemoryStream): any {
+            return null;
+        }
+        AddToStream(stream: Bundle, value: any): void {
+
+        }
+        ParseDefaultValueString(value: string): any {
+            return null;
+        }
+        IsSameType(value: any): boolean {
+            return value == null;
+        }
+    }
+
+    export class DATATYPE_UINT8 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+
+            return stream.ReadUint8();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteUint8(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < 0 || value > 0xff) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_UINT16 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadUint16();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteUint16(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < 0 || value > 0xffff) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_UINT32 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadUint32();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteUint32(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < 0 || value > 0xffffffff) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_UINT64 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadUint64();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteUint64(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof KB_UINT64 || typeof value === "bigint";
+        }
+    }
+
+    export class DATATYPE_INT8 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadInt8();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteInt8(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < -0x80 || value > 0x7f) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_INT16 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadInt16();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteInt16(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < -0x8000 || value > 0x7fff) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_INT32 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadInt32();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteInt32(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            if (!IsNumber(value))
+                return false;
+
+            if (value < -0x80000000 || value > 0x7fffffff) {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_INT64 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadInt64();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteInt64(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseInt(value);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof KB_INT64 || typeof value === "bigint";
+        }
+    }
+
+    export class DATATYPE_FLOAT extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadFloat();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteFloat(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseFloat(value);
+        }
+
+        IsSameType(value: any): boolean {
+            return typeof (value) === "number";
+        }
+    }
+
+    export class DATATYPE_DOUBLE extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadDouble();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteDouble(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return parseFloat(value);
+        }
+
+        IsSameType(value: any): boolean {
+            return typeof (value) === "number";
+        }
+    }
+
+    export class DATATYPE_STRING extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadString();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            return stream.WriteString(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return value;   // TODO: 需要测试正确
+        }
+
+        IsSameType(value: any): boolean {
+            return typeof (value) === "string";
+        }
+    }
+
+    export class DATATYPE_VECTOR2 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return new Vector2(stream.ReadFloat(), stream.ReadFloat());
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteFloat(value.x);
+            stream.WriteFloat(value.y);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return new Vector2(0.0, 0.0);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof Vector2;
+        }
+    }
+
+    export class DATATYPE_VECTOR3 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return new Vector3(stream.ReadFloat(), stream.ReadFloat(), stream.ReadFloat());
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteFloat(value.x);
+            stream.WriteFloat(value.y);
+            stream.WriteFloat(value.z);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return new Vector3(0.0, 0.0, 0.0);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof Vector3;
+        }
+    }
+
+    export class DATATYPE_VECTOR4 extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return new Vector4(stream.ReadFloat(), stream.ReadFloat(), stream.ReadFloat(), stream.ReadFloat());
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteFloat(value.x);
+            stream.WriteFloat(value.y);
+            stream.WriteFloat(value.z);
+            stream.WriteFloat(value.w);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return new Vector4(0.0, 0.0, 0.0, 0.0);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof Vector4;
+        }
+    }
+
+
+    export class DATATYPE_PYTHON extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadBlob();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteBlob(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return new Uint8Array(0);
+        }
+
+        IsSameType(value: any): boolean {
+            return value instanceof Uint8Array;
+        }
+    }
+
+    export class DATATYPE_UNKNOW extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+        }
+
+        ParseDefaultValueString(value: string): any {
+        }
+
+        IsSameType(value: any): any {
+        }
+    }
+
+    export class DATATYPE_UNICODE extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return KBEEncoding.UTF8ArrayToString(stream.ReadBlob());
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteBlob(KBEEncoding.StringToUTF8Array(value));
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return value;
+        }
+
+        IsSameType(value: any): boolean {
+            return typeof value === "string";
+        }
+    }
+
+    export class DATATYPE_ENTITYCALL extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            stream.ReadInt32()
+            stream.ReadUint64()
+            stream.ReadUint16()
+            stream.ReadUint16()
+            return null
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteBlob(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+        }
+
+        IsSameType(value: any): boolean {
+            return false;
+        }
+    }
+
+    export class DATATYPE_BLOB extends DATATYPE_BASE {
+        CreateFromStream(stream: MemoryStream): any {
+            return stream.ReadBlob();
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteBlob(value);
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return new Uint8Array(0);
+        }
+
+        IsSameType(value: any): boolean {
+            return true;
+        }
+    }
+
+    export class DATATYPE_ARRAY extends DATATYPE_BASE {
+        type: any;
+
+        Bind() {
+            if (typeof (this.type) == "number")
+                this.type = EntityDef.datatypes[this.type];
+        }
+
+        CreateFromStream(stream: MemoryStream): Array<any> {
+            let size = stream.ReadUint32();
+            let items = [];
+            while (size-- > 0) {
+                size--;
+                // items.push(this.type.CreateFromStream(stream));
+            }
+
+            return items;
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            stream.WriteUint32(value.length);
+            for (let i = 0; i < value.length; i++) {
+                this.type.AddToStream(stream, value[i]);
+            }
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return [];
+        }
+
+        IsSameType(value: any): boolean {
+            for (let i = 0; i < value.length; i++) {
+                if (!this.type.IsSameType(value[i]))
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    export class DATATYPE_FIXED_DICT extends DATATYPE_BASE {
+        dictType: { [key: string]: any } = {};
+        implementedBy: string;
+
+        Bind() {
+            for (let key in this.dictType) {
+                //KBEDebug.DEBUG_MSG("DATATYPE_FIXED_DICT::Bind------------------->>>show (key:%s, value:%s).", key, this.dictType[key]);
+                if (typeof (this.dictType[key]) == "number") {
+                    let utype = Number(this.dictType[key]);
+                    this.dictType[key] = EntityDef.datatypes[utype];
+                }
+            }
+        }
+
+        CreateFromStream(stream: MemoryStream): { [key: string]: any } {
+            let datas = {};
+            for (let key in this.dictType) {
+                KBEDebug.DEBUG_MSG("DATATYPE_FIXED_DICT::CreateFromStream------------------->>>FIXED_DICT(key:%s).", key);
+                datas[key] = this.dictType[key].CreateFromStream(stream);
+            }
+
+            return datas;
+        }
+
+        AddToStream(stream: Bundle, value: any): void {
+            for (let key in this.dictType) {
+                this.dictType[key].AddToStream(stream, value[key]);
+            }
+        }
+
+        ParseDefaultValueString(value: string): any {
+            return {};
+        }
+
+        IsSameType(value: any): boolean {
+            for (let key in this.dictType) {
+                if (!this.dictType[key].IsSameType(value[key]))
+                    return false;
+            }
+            return true;
+        }
+    }
+}
+//#endregion
+
+
+
+
+
+//#region KBEngine Entity
+export class Entity
+{
+    id: number;
+    className: string;
+
+    position: Vector3 = new Vector3(0, 0, 0);
+    direction: Vector3 = new Vector3(0, 0, 0);
+    entityLastLocalPos = new Vector3(0.0, 0.0, 0.0);
+    entityLastLocalDir = new Vector3(0.0, 0.0, 0.0);
+
+    inWorld: boolean = false;
+    inited: boolean = false;
+    isControlled: boolean = false;
+    isOnGround: boolean = false;
+
+    // cell: EntityCall;
+    // base: EntityCall;
+
+    __init__()
+    {
+    }
+
+    CallPropertysSetMethods()
+    {
+        // 动态生成
+    }
+
+    GetPropertyValue(name: string)
+    {
+        let value = this[name];
+        if(value == undefined)
+        {
+            KBEDebug.INFO_MSG("Entity::GetPropertyValue: property(%s) not found(undefined).", name);
+        }
+
+        return value;
+    }
+
+    SetPropertyValue(name: string, value: any)
+    {
+        this[name] = value;
+    }
+
+    OnDestroy()
+    {
+    }
+
+    OnControlled(isControlled: boolean)
+    {
+        KBEDebug.DEBUG_MSG("Entity::OnControlled:entity(%id) controlled state(%s) change.", this.id, isControlled);
+    }
+
+    IsPlayer(): boolean
+    {
+        return KBEngineApp.app!.entity_id === this.id;
+    }
+
+    BaseCall(methodName: string, ...args: any[])
+    {
+        if(KBEngineApp.app!.currserver == "loginapp"){
+            KBEDebug.ERROR_MSG("%s::baseCall(%s),currserver is loginapp.", this.className, methodName);
+            return;
+        }
+
+        // if(this.base === undefined)
+        // {
+        //     KBEDebug.ERROR_MSG("Entity::BaseCall: entity(%d) base is undefined.", this.id);
+        // }
+
+        let method: Method = EntityDef.moduledefs[this.className].baseMethods[methodName];
+        if(method === undefined)
+        {
+            KBEDebug.ERROR_MSG("Entity::BaseCall: entity(%d) method(%s) not found.", this.id, methodName);
+        }
+
+        if(args.length !== method.args.length)
+        {
+            KBEDebug.ERROR_MSG("Entity::BaseCall: args(%d != %d) size is error!", args.length, method.args.length);  
+			return;
+        }
+
+
+        let baseEntityCall = this.getBaseEntityCall();
+
+        if (!baseEntityCall) {
+            KBEDebug.ERROR_MSG(this.className + "::baseCall(%s),baseEntityCall is null.", methodName);
+            return;
+        }
+
+        baseEntityCall.NewCall();
+        baseEntityCall.bundle!.WriteUint16(0);
+        baseEntityCall.bundle!.WriteUint16(method.methodUtype);
+
+        try
+        {
+            for(let i = 0; i < method.args.length; i++)
+            {
+                if(method.args[i].IsSameType(args[i]))
+                {
+                    method.args[i].AddToStream(baseEntityCall.bundle, args[i])
+                }
+                else
+                {
+                    throw(new Error("KBEngine.Entity::baseCall: arg[" + i + "] is error!"));
+                }
+            }
+        }
+        catch(e)
+        {
+            KBEDebug.ERROR_MSG(e.toString());
+            KBEDebug.ERROR_MSG("KBEngine.Entity::baseCall: args is error!");
+            baseEntityCall.bundle = undefined;
+            return;
+        }
+
+        baseEntityCall.SendCall();
+    }
+
+    CellCall(methodName: string, ...args: any[])
+    {
+        if(KBEngineApp.app!.currserver == "loginapp"){
+            KBEDebug.ERROR_MSG("%s::cellCall(%s),currserver is loginapp.", this.className, methodName);
+            return;
+        }
+
+
+        let method: Method = EntityDef.moduledefs[this.className].cellMethods[methodName];
+        if(method === undefined)
+        {
+            KBEDebug.ERROR_MSG("Entity::CellCall: entity(%d) method(%s) not found.", this.id, methodName);
+        }
+
+        if(args.length !== method.args.length)
+        {
+            KBEDebug.ERROR_MSG("Entity::CellCall: args(%d != %d) size is error!", args.length, method.args.length);  
+			return;
+        }
+
+        let cellEntityCall = this.getCellEntityCall();
+
+        if (cellEntityCall == null) {
+            KBEDebug.ERROR_MSG(this.className + "::cellCall(%s),cellEntityCall is null.", methodName);
+            return;
+        }
+
+        cellEntityCall.NewCall();
+        cellEntityCall.bundle!.WriteUint16(0);
+        cellEntityCall.bundle!.WriteUint16(method.methodUtype);
+
+        try
+        {
+            for(let i = 0; i < method.args.length; i++)
+            {
+                if(method.args[i].IsSameType(args[i]))
+                {
+                    method.args[i].AddToStream(cellEntityCall.bundle, args[i])
+                }
+                else
+                {
+                    throw(new Error("KBEngine.Entity::baseCall: arg[" + i + "] is error!"));
+                }
+            }
+        }
+        catch(e)
+        {
+            KBEDebug.ERROR_MSG(e.tostring());
+            KBEDebug.ERROR_MSG("KBEngine.Entity::baseCall: args is error!");
+            cellEntityCall.bundle = undefined;
+            return;
+        }
+
+        cellEntityCall.SendCall();
+    }
+
+    EnterWorld()
+    {
+        KBEDebug.DEBUG_MSG(this.className + "::EnterWorld------------------->>>id:%s.", this.id);
+        this.inWorld = true;
+       
+        try{
+            this.OnEnterWorld();
+            this.onComponentsEnterworld();
+        }catch(e){
+            KBEDebug.ERROR_MSG(this.className + "::EnterWorld: error(%s).", e.toString());
+        }
+
+        KBEEvent.Fire("onEnterWorld", this);
+    }
+
+    OnEnterWorld()
+    {
+        KBEDebug.DEBUG_MSG(this.className + "::OnEnterWorld------------------->>>id:%s.", this.id);
+    }
+
+    LeaveWorld()
+    {
+        try{
+            this.OnLeaveWorld();
+            this.onComponentsLeaveworld();
+        }catch(e){
+            KBEDebug.ERROR_MSG(this.className + "::LeaveWorld: error(%s).", e.toString());
+        }
+
+        KBEEvent.Fire("onLeaveWorld", this);
+    }
+
+    OnLeaveWorld()
+    {
+        KBEDebug.DEBUG_MSG(this.className + "::OnLeaveWorld------------------->>>id:%s.", this.id);
+    }
+
+    EnterSpace()
+    {
+        this.inWorld = true;
+        try{
+            this.OnEnterSpace();
+        }catch(e){
+            KBEDebug.ERROR_MSG(this.className + "::EnterSpace: error(%s).", e.toString());
+        }
+
+        KBEEvent.Fire("onEnterSpace", this);
+
+        // 要立即刷新表现层对象的位置
+        KBEEvent.Fire("set_position", this);
+        KBEEvent.Fire("set_direction", this);
+    }
+
+    OnEnterSpace()
+    {
+        KBEDebug.DEBUG_MSG(this.className + "::OnEnterSpace------------------->>>id:%s.", this.id);
+    }
+
+    LeaveSpace()
+    {
+        this.inWorld = false;
+        try{
+            this.OnLeaveSpace();
+        }catch(e){
+            KBEDebug.ERROR_MSG(this.className + "::LeaveSpace: error(%s).", e.toString());
+        }
+
+        KBEEvent.Fire("onLeaveSpace", this);
+    }
+
+    OnLeaveSpace()
+    {
+        KBEDebug.DEBUG_MSG(this.className + "::OnLeaveSpace------------------->>>id:%s.", this.id);
+    }
+
+    OnUpdateVolatileData()
+    {
+    }
+
+    // set_position(oldVal: Vector3)
+    // {
+	// 	if(this.IsPlayer())
+	// 	{
+	// 		KBEngineApp.app!.entityServerPos.x = this.position.x;
+	// 		KBEngineApp.app!.entityServerPos.y = this.position.y;
+    //         KBEngineApp.app!.entityServerPos.z = this.position.z;
+	// 	}
+
+    //     if(this.inWorld)
+    //        KBEEvent.Fire("set_position", this);
+    // }
+
+    // set_direction(oldVal: Vector3)
+    // {
+    //     if(this.inWorld)
+    //        KBEEvent.Fire("set_direction", this);
+    // }
+
+    SetPositionFromServer(postion: Vector3)
+    {
+    }
+
+    SetDirectionFromServer(direction: Vector3)
+    {
+    }
+
+    Destroy()
+    {
+        this.OnDestroy();
+        this.detachComponents();
+    }
+
+
+    
+    attachComponents()
+    {
+        // 动态生成
+    }
+
+    detachComponents()
+    {
+        // 动态生成
+    }
+
+    callPropertysSetMethods()
+    {
+        // 动态生成
+    }
+
+     getBaseEntityCall() : EntityCall | null
+    {
+        // 动态生成
+        return null;
+    }
+
+     getCellEntityCall() : EntityCall | null
+    {
+        // 动态生成
+        return null;
+    }
+
+
+    onRemoteMethodCall(stream:MemoryStream )
+    {
+        // 动态生成
+    }
+
+    onUpdatePropertys(stream:MemoryStream)
+    {
+        // 动态生成
+    }
+
+    onGetBase()
+    {
+        // 动态生成
+    }
+
+    onGetCell()
+    {
+        // 动态生成
+    }
+
+    onLoseCell()
+    {
+        // 动态生成
+    }
+
+    onComponentsEnterworld()
+    {
+        // 动态生成， 通知组件onEnterworld
+    }
+
+    onComponentsLeaveworld()
+    {
+        // 动态生成， 通知组件onLeaveworld
+    }
+
+    onPositionChanged(oldVal: Vector3){
+        if(this.IsPlayer()){
+            KBEngineApp.app!.entityServerPos = this.position;
+        }
+
+        if(this.inWorld){
+            KBEEvent.Fire("set_position", this);
+        }
+    }
+
+
+    onDirectionChanged(oldVal: Vector3){
+        if(this.inWorld){
+            // this.direction.x
+            KBEEvent.Fire("set_direction", this);
+        }else{
+            this.direction = oldVal;
+        }
+    }
+
+    getComponents(componentName:string, all :boolean){
+        // 动态生成
+        return [] as EntityComponent[];
+    }
+}
+
+//#endregion
+
+
+//#region KBEngine EntityCall
+export abstract class EntityCall
+{
+    bundle?: Bundle;
+    id: number = 0;
+    className: string = "";
+    
+    // 0: CellEntityCall, 1: BaseEntityCall
+    entityCallType: number = 0;
+
+
+    constructor(eid: number,ename:string)
+    {
+        this.id = eid;
+        this.className = ename;
+    }
+
+    isBase(){
+        return this.entityCallType == 1;
+    }
+
+    isCell(){
+        return this.entityCallType == 0;
+    }
+
+    SendCall(bundle?: Bundle)
+    {
+        KBEDebug.ASSERT(this.bundle !== undefined);
+
+        if(bundle === undefined)
+            bundle = this.bundle;
+        bundle!.Send(KBEngineApp.app!.networkInterface);
+        
+        if(bundle === this.bundle)
+            this.bundle = undefined;
+    }
+
+    // protected abstract BuildBundle();
+
+    NewCall()
+    {
+        if(this.bundle === undefined)
+            this.bundle = new Bundle();
+            
+        // this.BuildBundle();
+
+        if(this.isCell()){
+            this.bundle.NewMessage(Messages.messages["Baseapp_onRemoteCallCellMethodFromClient"])
+        }else{
+            this.bundle.NewMessage(Messages.messages["Entity_onRemoteMethodCall"])
+        }
+
+        this.bundle.WriteUint32(this.id);
+
+        return this.bundle;
+    }
+
+    
+
+    NewCallToMethod(methodName:string, entitycomponentPropertyID:number = 0){
+        if(KBEngineApp.app!.currserver == "loginapp"){
+            KBEDebug.ERROR_MSG(this.className + "::newCall(" + methodName + "), currserver=!" + KBEngineApp.app!.currserver);  
+            return null;
+        }
+
+        const module = EntityDef.moduledefs[this.className];
+        if(!module){
+            KBEDebug.ERROR_MSG(this.className + "::newCall: entity-module(" + this.className + ") error, can not find from EntityDef.moduledefs");
+            return null;
+        }
+
+        let method: Method;
+        if(this.isCell()){
+            method = module.cellMethods[methodName];
+        }else{
+            method = module.baseMethods[methodName];
+        }
+        
+        if(!method){
+            KBEDebug.ERROR_MSG(this.className + "::newCall: entity-method(" + this.className + ") error, can not find from EntityDef.moduledefs");
+        }
+
+
+        this.NewCall();
+        this.bundle!.WriteUint16(entitycomponentPropertyID);
+        this.bundle!.WriteUint16(method.methodUtype);
+        return this.bundle;
+    }
+}
+//#endregion
+
+
+//#region KBEngine EntityComponent
+export abstract class EntityComponent {
+    public owner: any;
+    public entityComponentPropertyID: number = 0;
+    public name_: string = '';
+    public ownerID: number = 0;
+    public componentType: number = 0;
+  
+    public onEnterworld?(): void;
+    public onLeaveworld?(): void;
+    public onGetBase?(): void;
+    public onGetCell?(): void;
+    public onLoseCell?(): void;
+    public onAttached?(entity: Entity): void;
+    public onDetached?(entity: Entity): void;
+    public getScriptModule?(): ScriptModule;
+  
+  
+    public onRemoteMethodCall(methodUtype: number, stream: MemoryStream) {
+      // 动态生成
+    }
+  
+    public onUpdatePropertys(propUtype: number, stream: MemoryStream, maxCount: number) {
+      // 动态生成
+    }
+  
+    public callPropertysSetMethods() {
+      // 动态生成
+    }
+  
+  
+  
+    public createFromStream(stream: MemoryStream)
+    {
+        this.componentType = stream.ReadInt32();
+        this.ownerID = stream.ReadInt32();
+
+        //UInt16 ComponentDescrsType;
+        stream.ReadUint16();
+
+        let count = stream.ReadUint16();
+
+        if(count > 0)
+            this.onUpdatePropertys(0, stream, count);
+    }
+} 
+//#endregion
+
+
+
+
+//#region KBEngine MemoryStream
+class PackFloatXType
+{
+    private _unionData: ArrayBuffer;
+    fv: Float32Array;
+    uv: Uint32Array;
+    iv: Int32Array;
+
+    constructor()
+    {
+        this._unionData = new ArrayBuffer(4);
+        this.fv = new Float32Array(this._unionData, 0, 1);
+        this.uv = new Uint32Array(this._unionData, 0, 1);
+        this.iv = new Int32Array(this._unionData, 0, 1);
+    }
+}
+
+export class MemoryStream
+{
+    rpos: number = 0;
+    wpos: number = 0;
+    private buffer: ArrayBuffer;
+
+    constructor(size_or_buffer: number | ArrayBuffer)
+    {
+        if(size_or_buffer instanceof ArrayBuffer)
+        {
+            this.buffer = size_or_buffer;
+        }
+        else
+        {
+            this.buffer = new ArrayBuffer(size_or_buffer);
+        }
+    }
+
+    Space(): number
+    {
+        return this.buffer.byteLength - this.wpos;
+    }
+
+    ReadInt8(): number
+    {
+        let buf = new Int8Array(this.buffer, this.rpos);
+        this.rpos += 1;
+        return buf[0];
+    }
+
+    ReadUint8(): number
+    {
+        let buf = new Uint8Array(this.buffer, this.rpos);
+        this.rpos += 1;
+        return buf[0];
+    }
+
+    ReadUint16(): number
+    {
+        let buf = new Uint8Array(this.buffer, this.rpos);
+        this.rpos += 2;
+        return ((buf[1] & 0xff) << 8) + (buf[0] & 0xff);
+    }
+
+    ReadInt16(): number
+    {
+        let value = this.ReadUint16();
+        if(value >= 32768)
+            value -= 65536;
+        return value;
+    }
+
+    ReadUint32(): number
+    {
+        let buf = new Uint8Array(this.buffer, this.rpos);
+        this.rpos += 4;
+
+        return (buf[3] << 24) + (buf[2] << 16) + (buf[1] << 8) + buf[0];
+    }
+
+    ReadInt32(): number
+    {
+        let value = this.ReadUint32();
+        if(value >= 2147483648)
+            value -= 4294967296;
+        return value;
+    }
+
+    ReadUint64(): DataTypes.KB_UINT64
+    {
+        return new DataTypes.KB_UINT64(this.ReadUint32(), this.ReadUint32());
+    }
+
+    ReadInt64(): DataTypes.KB_INT64
+    {
+        return new DataTypes.KB_INT64(this.ReadUint32(), this.ReadUint32());
+    }
+
+    ReadFloat(): number
+    {
+        let buf: Float32Array | undefined;
+        try
+        {
+            buf = new Float32Array(this.buffer, this.rpos, 1);
+        }
+        catch(e)
+        {
+            buf = new Float32Array(this.buffer.slice(this.rpos, this.rpos + 4));
+        }
+        
+        this.rpos += 4;
+
+        return buf[0];
+    }
+
+    ReadDouble(): number
+    {
+        let buf: Float64Array | undefined;
+		try
+		{
+			buf = new Float64Array(this.buffer, this.rpos, 1);
+		}
+		catch(e)
+		{
+			buf = new Float64Array(this.buffer.slice(this.rpos, this.rpos + 8), 0, 1);
+        }
+        
+        this.rpos += 8;
+        return buf[0];
+    }
+
+    ReadString(): string
+    {
+        let buf = new Int8Array(this.buffer, this.rpos);
+        let value: string = "";
+        let index: number = 0;
+        
+        while(true)
+        {
+            if(buf[index] != 0 )
+            {
+                value += String.fromCharCode(buf[index]);
+                index += 1;
+                if(this.rpos + index >= this.buffer.byteLength)
+                {
+                    throw(new Error("KBEngine.MemoryStream::ReadString overflow(>=) max length:" + this.buffer.byteLength));
+                }
+            }
+            else
+            {
+                index += 1;
+                break;
+            }
+        }
+
+        this.rpos += index;
+        return value;
+    }
+
+
+    ReadUnicode(): string {
+        const size = this.ReadUint32(); // 读取字节长度
+        const buf = new Uint8Array(this.buffer, this.rpos, size);
+        this.rpos += size;
+    
+        // 解码 UTF-8 buffer 到字符串
+        const decoder = new TextDecoder("utf-8");
+        return decoder.decode(buf);
+    }
+
+    ReadBlob(): Uint8Array
+    {
+        let size = this.ReadUint32();
+        let buf = new Uint8Array(this.buffer, this.rpos, size);
+        this.rpos += size;
+        return buf;
+    }
+
+    // ReadStream(): MemoryStream
+    // {
+    //     let buf = new Uint8Array(this.buffer, this.rpos, this.buffer.byteLength - this.rpos);
+    //     this.rpos = this.buffer.byteLength;
+    //     return new MemoryStream(buf);
+    // }
+
+
+    ReadVector2(): Vector2 {
+        return new Vector2(this.ReadFloat(), this.ReadFloat());
+    }
+
+    ReadVector3(): Vector3 {
+        return new Vector3(this.ReadFloat(), this.ReadFloat(), this.ReadFloat());
+    }
+
+    ReadVector4(): Vector4 {
+        return new Vector4(this.ReadFloat(), this.ReadFloat(), this.ReadFloat(), this.ReadFloat());
+    }
+
+    ReadPackXZ(): Array<number>
+    {
+        let xPackData = new PackFloatXType();
+        let zPackData = new PackFloatXType();
+
+        xPackData.fv[0] = 0.0;
+        zPackData.fv[0] = 0.0;
+
+        xPackData.uv[0] = 0x40000000;
+        zPackData.uv[0] = 0x40000000;
+		let v1 = this.ReadUint8();
+		let v2 = this.ReadUint8();
+		let v3 = this.ReadUint8();
+
+		let data = 0;
+		data |= (v1 << 16);
+		data |= (v2 << 8);
+		data |= v3;
+
+		xPackData.uv[0] |= (data & 0x7ff000) << 3;
+		zPackData.uv[0] |= (data & 0x0007ff) << 15;
+
+		xPackData.fv[0] -= 2.0;
+		zPackData.fv[0] -= 2.0;
+	
+		xPackData.uv[0] |= (data & 0x800000) << 8;
+		zPackData.uv[0] |= (data & 0x000800) << 20;
+		
+		let xzData = new Array(2);
+		xzData[0] = xPackData.fv[0];
+		xzData[1] = zPackData.fv[0];
+		return xzData;
+    }
+
+    ReadPackY(): number
+    {
+        let data = this.ReadUint16();
+        
+        let yPackData = new PackFloatXType();
+        yPackData.uv[0] = 0x40000000;
+        yPackData.uv[0] |= (data & 0x7fff) << 12;   // 解压，补足尾数
+        yPackData.fv[0] -= 2.0;                     // 此时还未设置符号位，当作正数处理，-2后再加上符号位即可，无需根据正负来+-2
+        yPackData.uv[0] |= (data & 0x8000) << 16;   // 设置符号位
+
+        return yPackData.fv[0];
+    }
+
+    WriteInt8(value: number): void
+    {
+        let buf = new Int8Array(this.buffer, this.wpos, 1);
+        buf[0] = value;
+        this.wpos += 1;
+    }
+
+    WriteInt16(value: number): void
+    {
+        this.WriteInt8(value & 0xff);
+        this.WriteInt8((value >> 8) & 0xff);
+    }
+
+    WriteInt32(value: number): void
+    {
+        for(let i = 0; i < 4; i++)
+            this.WriteInt8((value >> i * 8) & 0xff);
+    }
+
+    WriteInt64(value: DataTypes.KB_INT64): void
+    {
+        this.WriteInt32(value.low);
+        this.WriteInt32(value.high);
+    }
+
+    WriteUint8(value: number): void
+    {
+        let buf = new Uint8Array(this.buffer, this.wpos, 1);
+        buf[0] = value;
+        this.wpos += 1;
+    }
+
+    WriteUint16(value: number): void
+    {
+        this.WriteUint8(value & 0xff);
+        this.WriteUint8((value >> 8) & 0xff);
+    }
+
+    WriteUint32(value: number): void
+    {
+        for(let i = 0; i < 4; i++)
+            this.WriteUint8((value >> i*8) & 0xff);
+    }
+
+    WriteUint64(value: DataTypes.KB_UINT64): void
+    {
+        this.WriteUint32(value.low);
+        this.WriteUint32(value.high);
+    }
+
+    WriteFloat(value: number): void
+    {
+        try
+        {
+            let buf = new Float32Array(this.buffer, this.wpos, 1);
+            buf[0] = value;
+        }
+        catch(e)
+        {
+            let buf = new Float32Array(1);
+            buf[0] = value;
+            let buf1 = new Uint8Array(this.buffer);
+            let buf2 = new Uint8Array(buf.buffer);
+            buf1.set(buf2, this.wpos);
+        }
+
+        this.wpos += 4;
+    }
+
+    WriteDouble(value: number): void
+    {
+		try
+		{
+			let buf = new Float64Array(this.buffer, this.wpos, 1);
+			buf[0] = value;
+		}
+		catch(e)
+		{
+			let buf = new Float64Array(1);
+			buf[0] = value;
+			let buf1 = new Uint8Array(this.buffer);
+			let buf2 = new Uint8Array(buf.buffer);
+			buf1.set(buf2, this.wpos);
+        }
+        
+        this.wpos += 8;
+    }
+
+    WriteBlob(value: string|Uint8Array): void
+    {
+        let size = value.length;
+        if(size + 4 > this.Space())
+        {
+            KBEDebug.ERROR_MSG("KBE.MemoryStream:WriteBlob:there is no space for size:%d", size + 4);
+            return;
+        }
+
+        this.WriteUint32(size);
+
+        let buf = new Uint8Array(this.buffer, this.wpos, size);
+        if(typeof(value) == "string")
+        {
+            for(let i = 0; i < size; i++)
+            {
+                buf[i] = value.charCodeAt(i);
+            }
+        }
+        else
+        {
+            for(let i = 0; i< size; i++)
+            {
+                buf[i] = value[i];
+            }
+        }
+
+        this.wpos += size;
+    }
+
+    WriteString(value: string): void
+    {
+
+        if(value.length + 1 > this.Space())
+        {
+            KBEDebug.ERROR_MSG("KBE.MemoryStream:WriteString:there is no space for size:%d", value.length + 1);
+            return;
+        }
+
+        let buf = new Uint8Array(this.buffer, this.wpos, value.length);
+        for(let i = 0; i < value.length; i++)
+        {
+            buf[i] = value.charCodeAt(i);
+        }
+
+        buf[value.length] = 0;
+        this.wpos = this.wpos + value.length + 1;
+    }
+
+    ReadSkip(count: number): void
+    {
+        this.rpos += count;
+    }
+
+    Length(): number
+    {
+        return this.wpos - this.rpos;
+    }
+
+    ReadEOF(): boolean
+    {
+        return this.buffer.byteLength - this.rpos <= 0;
+    }
+
+    Done(): void
+    {
+        this.rpos = this.wpos;
+    }
+
+    GetBuffer(): ArrayBuffer
+    {
+        return this.buffer.slice(this.rpos, this.wpos);
+    }
+
+    GetRawBuffer(): ArrayBuffer
+    {
+        return this.buffer;
+    }
+}
+//#endregion
+
+
+
+//#region KBEngine NetworkInterface
+export class NetworkInterface
+{
+    private socket: WebSocket | undefined;
+    private onOpenCB: Function | undefined;
+
+    get IsGood(): boolean
+    {
+        return this.socket != undefined && this.socket.readyState === WebSocket.OPEN;
+    }
+
+    ConnectTo(addr: string, callbackFunc?: (event:Event)=>any)
+    {
+        try
+        {
+            this.socket = new WebSocket(addr);
+        }
+        catch(e)
+        {
+            KBEDebug.ERROR_MSG("NetworkInterface::Connect:Init socket error:" + e);
+            KBEEvent.Fire("onConnectionState", false);
+            return;
+        }
+
+        this.socket.binaryType = "arraybuffer";
+
+        this.socket.onerror = this.onerror;
+        this.socket.onclose = this.onclose;
+        this.socket.onmessage = this.onmessage;
+        this.socket.onopen = this.onopen;
+        if(callbackFunc)
+        {
+            this.onOpenCB = callbackFunc;
+        }
+    }
+
+    Close()
+    {
+        try
+        {
+            KBEDebug.INFO_MSG("NetworkInterface::Close on good:" + this.IsGood)
+            if(this.socket != undefined)
+            {
+                this.socket.close();
+                this.socket.onclose = null;
+                this.socket = undefined;
+            }
+        }
+        catch(e)
+        {
+            KBEDebug.ERROR_MSG("NetworkInterface::Close error:%s.", e);
+        }
+    }
+
+    Send(buffer: ArrayBuffer)
+    {
+        if(!this.IsGood)
+        {
+            KBEDebug.ERROR_MSG("NetworkInterface::Send:socket is unavailable.");
+            return;
+        }
+
+        try
+        {
+            KBEDebug.DEBUG_MSG("NetworkInterface::Send buffer length:[%d].", buffer.byteLength);
+            this.socket!.send(buffer);
+        }
+        catch(e)
+        {
+            KBEDebug.ERROR_MSG("NetworkInterface::Send error:%s.", e);
+        }
+    }
+
+    private onopen = (event: Event) =>
+    {
+        KBEDebug.DEBUG_MSG("NetworkInterface::onopen:success!");
+        if(this.onOpenCB)
+        {
+            this.onOpenCB(event as MessageEvent);
+            this.onOpenCB = undefined;
+        }
+    }
+    
+    private onerror = (event: Event) =>
+    {
+        KBEDebug.DEBUG_MSG("NetworkInterface::onerror:...!");
+        KBEEvent.Fire("onNetworkError", event as MessageEvent);
+    }
+
+    private onmessage = (event: MessageEvent) =>
+    {
+        let data: ArrayBuffer = event.data;
+        //KBEDebug.DEBUG_MSG("NetworkInterface::onmessage:...!" + data.byteLength);
+        let stream: MemoryStream = new MemoryStream(data);
+        stream.wpos = data.byteLength;
+
+        while(stream.rpos < stream.wpos)
+        {
+            let msgID = stream.ReadUint16();
+            //KBEDebug.DEBUG_MSG("NetworkInterface::onmessage:...!msgID:" + msgID);
+
+            let handler: Message = Messages.clientMessages[msgID];
+            if(!handler)
+            {
+                KBEDebug.ERROR_MSG("NetworkInterface::onmessage:message(%d) has not found.", msgID);
+            }
+            else
+            {
+                let msgLen = handler.msglen;
+                if(msgLen === -1)
+                {
+                    msgLen = stream.ReadUint16();
+                    if(msgLen === 65535)
+                    {
+                        msgLen = stream.ReadUint32();
+                    }
+                }
+
+                let wpos = stream.wpos;
+                let rpos = stream.rpos + msgLen;
+                stream.wpos = rpos;
+                handler.handleMessage(stream);
+                stream.wpos = wpos;
+                stream.rpos = rpos;
+            }
+        }
+    }
+
+    private onclose = () =>
+    {
+        KBEDebug.DEBUG_MSG("NetworkInterface::onclose:...!");
+        KBEEvent.Fire("onDisconnected");
+    }
+}
+//#endregion
+
+
