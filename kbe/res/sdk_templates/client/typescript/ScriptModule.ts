@@ -1,5 +1,5 @@
-// 由 KBEngine C# SDK 结构迁移
 
+import { GetEntityScript } from "./ExportEntity";
 import { Method } from "./Method";
 import { Property } from "./Property";
 
@@ -20,8 +20,7 @@ export class ScriptModule {
 
   constructor(name: string) {
     this.name = name;
+    this.script = GetEntityScript(name);
   }
 
-  // getScriptSetMethod?(name: string): Function | undefined { return undefined; }
-  // getScriptMethod?(name: string): Function | undefined { return undefined; }
 } 

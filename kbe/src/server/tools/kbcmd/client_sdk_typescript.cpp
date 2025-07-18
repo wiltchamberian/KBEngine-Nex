@@ -142,10 +142,709 @@ std::string ClientSDKTypeScript::typeToType(const std::string& type)
 	return type;
 }
 
+
+//-------------------------------------------------------------------------------------
+bool ClientSDKTypeScript::saveFile(bool overwrite)
+{
+	bool done = false;
+
+	
+	if (sourcefileName_.size() > 0)
+	{
+		if (KBCMD::creatDir(currSourcePath_.c_str()) == -1)
+		{
+			ERROR_MSG(fmt::format("creating directory error! path={}\n", currSourcePath_));
+			return false;
+		}
+
+		std::string path = currSourcePath_ + sourcefileName_;
+
+		DEBUG_MSG(fmt::format("ClientSDK::saveFile(): {}\n",
+			path));
+
+		FILE* fp;
+
+		if (sourcefileName_ == "KBEngine.ts") {
+			fp = fopen(path.c_str(), "a");
+		}
+		else {
+			fp = fopen(path.c_str(), "w");
+		}
+
+		if (NULL == fp)
+		{
+			ERROR_MSG(fmt::format("ClientSDK::saveFile(): fopen error! {}\n",
+				path));
+
+			return false;
+		}
+
+		int written = fwrite(sourcefileBody_.c_str(), 1, sourcefileBody_.size(), fp);
+		if (written != (int)sourcefileBody_.size())
+		{
+			ERROR_MSG(fmt::format("ClientSDK::saveFile(): fwrite error! {}\n",
+				path));
+
+			fclose(fp);
+			return false;
+		}
+
+		if (fclose(fp))
+		{
+			ERROR_MSG(fmt::format("ClientSDK::saveFile(): fclose error! {}\n",
+				path));
+
+			return false;
+		}
+
+		done = true;
+	}
+
+	return done;
+}
+
+//-------------------------------------------------------------------------------------
+bool ClientSDKTypeScript::create(const std::string& path)
+{
+	basepath_ = path;
+
+	if (basepath_[basepath_.size() - 1] != '\\' && basepath_[basepath_.size() - 1] != '/')
+		basepath_ += "/";
+
+	currHeaderPath_ = currSourcePath_ = basepath_;
+
+	std::string findpath = "sdk_templates/client/" + name();
+
+	std::string getpath = Resmgr::getSingleton().matchPath(findpath);
+
+	if (getpath.size() == 0 || findpath == getpath)
+	{
+		ERROR_MSG(fmt::format("ClientSDK::create(): not found path({})\n",
+			findpath));
+
+		return false;
+	}
+
+	if (!copyPluginsSourceToPath(getpath))
+		return false;
+
+	if (!writeServerErrorDescrsModule())
+		return false;
+
+	if (!writeEngineMessagesModule())
+		return false;
+
+	if (!writeTypes())
+		return false;
+
+	if (!writeEntityDefsModule())
+		return false;
+
+	const EntityDef::SCRIPT_MODULES& scriptModules = EntityDef::getScriptModules();
+	EntityDef::SCRIPT_MODULES::const_iterator moduleIter = scriptModules.begin();
+	for (; moduleIter != scriptModules.end(); ++moduleIter)
+	{
+		ScriptDefModule* pScriptDefModule = (*moduleIter).get();
+
+		if (!writeEntityModule(pScriptDefModule))
+			return false;
+
+		if (!writeEntityCall(pScriptDefModule))
+			return false;
+	}
+
+	return true;
+}
+
+
+
+//-------------------------------------------------------------------------------------
+bool ClientSDKTypeScript::writeTypes()
+{
+	sourcefileName_ = sourcefileBody_ = "";
+	headerfileName_ = headerfileBody_ = "";
+
+	onCreateTypeFileName();
+
+	if (!writeTypesBegin())
+		return false;
+
+	const DataTypes::DATATYPE_MAP& dataTypes = DataTypes::dataTypes();
+	const DataTypes::DATATYPE_ORDERS& dataTypesOrders = DataTypes::dataTypesOrders();
+	DataTypes::DATATYPE_ORDERS::const_iterator oiter = dataTypesOrders.begin();
+
+	for (; oiter != dataTypesOrders.end(); ++oiter)
+	{
+		DataTypes::DATATYPE_MAP::const_iterator iter = dataTypes.find((*oiter));
+
+		std::string typeName = iter->first;
+
+		if (typeName[0] == '_')
+			continue;
+
+		DataType* pDataType = iter->second.get();
+
+		if (pDataType->type() == DATA_TYPE_FIXEDDICT)
+		{
+			FixedDictType* pFixedDictType = static_cast<FixedDictType*>(pDataType);
+
+			if (!writeTypeBegin(typeName, pFixedDictType))
+				return false;
+
+			FixedDictType::FIXEDDICT_KEYTYPE_MAP& keyTypes = pFixedDictType->getKeyTypes();
+			FixedDictType::FIXEDDICT_KEYTYPE_MAP::iterator itemIter = keyTypes.begin();
+			for (; itemIter != keyTypes.end(); ++itemIter)
+			{
+				std::string type = itemIter->second->dataType->getName();
+				std::string itemTypeName = itemIter->first;
+				std::string itemTypeAliasName = itemIter->second->dataType->aliasName();
+
+				if (type == "INT8")
+				{
+					if (!writeTypeItemType_INT8(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "INT16")
+				{
+					if (!writeTypeItemType_INT16(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "INT32")
+				{
+					if (!writeTypeItemType_INT32(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "INT64")
+				{
+					if (!writeTypeItemType_INT64(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "UINT8")
+				{
+					if (!writeTypeItemType_UINT8(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "UINT16")
+				{
+					if (!writeTypeItemType_UINT16(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "UINT32")
+				{
+					if (!writeTypeItemType_UINT32(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "UINT64")
+				{
+					if (!writeTypeItemType_UINT64(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "FLOAT")
+				{
+					if (!writeTypeItemType_FLOAT(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "DOUBLE")
+				{
+					if (!writeTypeItemType_DOUBLE(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "STRING")
+				{
+					if (!writeTypeItemType_STRING(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "UNICODE")
+				{
+					if (!writeTypeItemType_UNICODE(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "PYTHON")
+				{
+					if (!writeTypeItemType_PYTHON(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "PY_DICT")
+				{
+					if (!writeTypeItemType_PY_DICT(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "PY_TUPLE")
+				{
+					if (!writeTypeItemType_PY_TUPLE(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "PY_LIST")
+				{
+					if (!writeTypeItemType_PY_LIST(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "BLOB")
+				{
+					if (!writeTypeItemType_BLOB(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "ARRAY")
+				{
+					if (!writeTypeItemType_ARRAY(itemTypeName, itemTypeAliasName, itemIter->second->dataType))
+						return false;
+				}
+				else if (type == "FIXED_DICT")
+				{
+					if (!writeTypeItemType_FIXED_DICT(itemTypeName, itemTypeAliasName, itemIter->second->dataType))
+						return false;
+				}
+#ifdef CLIENT_NO_FLOAT
+				else if (type == "VECTOR2")
+				{
+					if (!writeTypeItemType_VECTOR2(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "VECTOR3")
+				{
+					if (!writeTypeItemType_VECTOR3(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "VECTOR4")
+				{
+					if (!writeTypeItemType_VECTOR4(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+#else
+				else if (type == "VECTOR2")
+				{
+					if (!writeTypeItemType_VECTOR2(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "VECTOR3")
+				{
+					if (!writeTypeItemType_VECTOR3(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+				else if (type == "VECTOR4")
+				{
+					if (!writeTypeItemType_VECTOR4(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+#endif
+				else if (type == "ENTITYCALL")
+				{
+					if (!writeTypeItemType_ENTITYCALL(itemTypeName, itemTypeAliasName))
+						return false;
+				}
+			}
+
+			if (!writeTypeEnd(typeName, pFixedDictType))
+				return false;
+		}
+		else if (pDataType->type() == DATA_TYPE_FIXEDARRAY)
+		{
+			FixedArrayType* pFixedArrayType = static_cast<FixedArrayType*>(pDataType);
+
+			if (!writeTypeBegin(typeName, pFixedArrayType, fmt::format("{}<#REPLACE#>", typeToType("ARRAY"))))
+				return false;
+
+			std::string type = pFixedArrayType->getDataType()->getName();
+			std::string itemTypeAliasName = pFixedArrayType->getDataType()->aliasName();
+
+			if (type == "ARRAY")
+			{
+				std::string newType;
+				getArrayType(pFixedArrayType->getDataType(), newType);
+				strutil::kbe_replace(headerfileBody_, "#REPLACE#", newType);
+				strutil::kbe_replace(sourcefileBody_, "#REPLACE#", newType);
+			}
+			else if (type == "FIXED_DICT")
+			{
+				strutil::kbe_replace(headerfileBody_, "#REPLACE#", itemTypeAliasName);
+				strutil::kbe_replace(sourcefileBody_, "#REPLACE#", itemTypeAliasName);
+			}
+			else
+			{
+				std::string newType = typeToType(type);
+				strutil::kbe_replace(headerfileBody_, "#REPLACE#", newType);
+				strutil::kbe_replace(sourcefileBody_, "#REPLACE#", newType);
+			}
+
+			std::string::size_type fHeaderPos = headerfileBody_.find("#REPLACE#");
+			std::string::size_type fSourcePos = sourcefileBody_.find("#REPLACE#");
+			KBE_ASSERT((fHeaderPos == std::string::npos) || (fSourcePos == std::string::npos));
+
+			if (!writeTypeEnd(typeName, pFixedArrayType))
+				return false;
+		}
+		else
+		{
+			if (!writeTypeBegin(typeName, pDataType))
+				return false;
+
+			if (!writeTypeItemType_AliasName(typeName, pDataType->getName()))
+				return false;
+
+			if (!writeTypeEnd(typeName, pDataType))
+				return false;
+		}
+	}
+
+	if (!writeTypesEnd())
+		return false;
+
+
+	if (!writeCustomDataTypesBegin())
+		return false;
+
+	const DataTypes::UID_DATATYPE_MAP& customDataTypes = DataTypes::uid_dataTypes();
+	DataTypes::UID_DATATYPE_MAP::const_iterator customDtiter = customDataTypes.begin();
+	for (; customDtiter != customDataTypes.end(); ++customDtiter)
+	{
+		const DataType* customDataTypes = customDtiter->second;
+
+		if (customDataTypes->aliasName()[0] == '_')
+			continue;
+
+		if (!writeCustomDataType(customDataTypes))
+			return false;
+	}
+	if (!writeCustomDataTypesEnd())
+		return false;
+
+
+	return saveFile();
+}
+
+
+
+//-------------------------------------------------------------------------------------
+bool ClientSDKTypeScript::writeEntityCall(ScriptDefModule* pScriptDefModule)
+{
+	sourcefileName_ = sourcefileBody_ = "";
+	headerfileName_ = headerfileBody_ = "";
+
+	onEntityCallModuleFileName(pScriptDefModule->getName());
+
+	if (!writeEntityCallBegin(pScriptDefModule))
+		return false;
+
+	std::string newModuleName;
+
+	// 先写BaseEntityCall
+	if (!writeBaseEntityCallBegin(pScriptDefModule))
+		return false;
+
+	{
+		ScriptDefModule::METHODDESCRIPTION_MAP& scriptMethods = pScriptDefModule->getBaseMethodDescriptions();
+		ScriptDefModule::METHODDESCRIPTION_MAP::iterator methodIter = scriptMethods.begin();
+		for (; methodIter != scriptMethods.end(); ++methodIter)
+		{
+			MethodDescription* pMethodDescription = methodIter->second;
+
+			if (!pMethodDescription->isExposed())
+				continue;
+
+			if (!writeEntityCallMethodBegin(pScriptDefModule, pMethodDescription, "#REPLACE_FILLARGS1#", "#REPLACE_FILLARGS2#", BASEAPP_TYPE))
+				return false;
+
+			std::string::size_type fHeaderPos = headerfileBody_.find("#REPLACE_FILLARGS1#");
+			std::string::size_type fSourcePos = sourcefileBody_.find("#REPLACE_FILLARGS1#");
+			KBE_ASSERT((fHeaderPos != std::string::npos) || (fSourcePos != std::string::npos));
+
+			std::string argsBody1 = "";
+			std::string argsBody2 = "";
+
+			std::vector<DataType*>& argTypes = pMethodDescription->getArgTypes();
+			std::vector<DataType*>::iterator iter = argTypes.begin();
+
+			int i = 1;
+
+			for (; iter != argTypes.end(); ++iter)
+			{
+				DataType* pDataType = (*iter);
+
+				argsBody2 += fmt::format("arg{}, ", i);
+
+				if (pDataType->type() == DATA_TYPE_FIXEDARRAY)
+				{
+					FixedArrayType* pFixedArrayType = static_cast<FixedArrayType*>(pDataType);
+
+					std::string argsTypeBody;
+					if (!writeEntityMethodArgs_ARRAY(pFixedArrayType, argsTypeBody, pFixedArrayType->aliasName()))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else if (pDataType->type() == DATA_TYPE_FIXEDDICT)
+				{
+					FixedDictType* pFixedDictType = static_cast<FixedDictType*>(pDataType);
+
+					std::string argsTypeBody = typeToType(pFixedDictType->aliasName());
+					if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else if (pDataType->type() != DATA_TYPE_DIGIT)
+				{
+					std::string argsTypeBody = typeToType(pDataType->getName());
+					if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else
+				{
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(pDataType->getName()) == "" ? "KBETypes." : ""), typeToType(pDataType->getName()));
+				}
+			}
+
+			if (argsBody1.size() > 0)
+			{
+				argsBody1.erase(argsBody1.size() - 2, 2);
+				argsBody2.erase(argsBody2.size() - 2, 2);
+
+				argsBody2 = std::string(", ") + argsBody2;
+			}
+
+			strutil::kbe_replace(headerfileBody_, "#REPLACE_FILLARGS1#", argsBody1);
+			strutil::kbe_replace(headerfileBody_, "#REPLACE_FILLARGS2#", argsBody2);
+			strutil::kbe_replace(sourcefileBody_, "#REPLACE_FILLARGS1#", argsBody1);
+			strutil::kbe_replace(sourcefileBody_, "#REPLACE_FILLARGS2#", argsBody2);
+
+			if (!writeEntityCallMethodEnd(pScriptDefModule, pMethodDescription))
+				return false;
+		}
+	}
+
+	if (!writeBaseEntityCallEnd(pScriptDefModule))
+		return false;
+
+	headerfileBody_ += fmt::format("\n");
+	sourcefileBody_ += fmt::format("\n");
+
+	// 再写CellEntityCall
+	if (!writeCellEntityCallBegin(pScriptDefModule))
+		return false;
+
+	{
+		ScriptDefModule::METHODDESCRIPTION_MAP& scriptMethods = pScriptDefModule->getCellMethodDescriptions();
+		ScriptDefModule::METHODDESCRIPTION_MAP::iterator methodIter = scriptMethods.begin();
+		for (; methodIter != scriptMethods.end(); ++methodIter)
+		{
+			MethodDescription* pMethodDescription = methodIter->second;
+
+			if (!pMethodDescription->isExposed())
+				continue;
+
+			if (!writeEntityCallMethodBegin(pScriptDefModule, pMethodDescription, "#REPLACE_FILLARGS1#", "#REPLACE_FILLARGS2#", CELLAPP_TYPE))
+				return false;
+
+			std::string::size_type fHeaderPos = headerfileBody_.find("#REPLACE_FILLARGS1#");
+			std::string::size_type fSourcePos = sourcefileBody_.find("#REPLACE_FILLARGS1#");
+			KBE_ASSERT((fHeaderPos != std::string::npos) || (fSourcePos != std::string::npos));
+
+			std::string argsBody1 = "";
+			std::string argsBody2 = "";
+
+			std::vector<DataType*>& argTypes = pMethodDescription->getArgTypes();
+			std::vector<DataType*>::iterator iter = argTypes.begin();
+
+			int i = 1;
+
+			for (; iter != argTypes.end(); ++iter)
+			{
+				DataType* pDataType = (*iter);
+
+				argsBody2 += fmt::format("arg{}, ", i);
+
+				if (pDataType->type() == DATA_TYPE_FIXEDARRAY)
+				{
+					FixedArrayType* pFixedArrayType = static_cast<FixedArrayType*>(pDataType);
+
+					std::string argsTypeBody;
+					if (!writeEntityMethodArgs_ARRAY(pFixedArrayType, argsTypeBody, pFixedArrayType->aliasName()))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else if (pDataType->type() == DATA_TYPE_FIXEDDICT)
+				{
+					FixedDictType* pFixedDictType = static_cast<FixedDictType*>(pDataType);
+
+					std::string argsTypeBody = typeToType(pFixedDictType->aliasName());
+					if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else if (pDataType->type() != DATA_TYPE_DIGIT)
+				{
+					std::string argsTypeBody = typeToType(pDataType->getName());
+					if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+					{
+						return false;
+					}
+
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(argsTypeBody) == "" ? "KBETypes." : ""), argsTypeBody);
+				}
+				else
+				{
+					argsBody1 += fmt::format("arg{}:{}{}, ", i++, (datatype2nativetype(pDataType->getName()) == "" ? "KBETypes." : ""), typeToType(pDataType->getName()));
+				}
+			}
+
+			if (argsBody1.size() > 0)
+			{
+				argsBody1.erase(argsBody1.size() - 2, 2);
+				argsBody2.erase(argsBody2.size() - 2, 2);
+
+				argsBody2 = std::string(", ") + argsBody2;
+			}
+
+			strutil::kbe_replace(headerfileBody_, "#REPLACE_FILLARGS1#", argsBody1);
+			strutil::kbe_replace(headerfileBody_, "#REPLACE_FILLARGS2#", argsBody2);
+			strutil::kbe_replace(sourcefileBody_, "#REPLACE_FILLARGS1#", argsBody1);
+			strutil::kbe_replace(sourcefileBody_, "#REPLACE_FILLARGS2#", argsBody2);
+
+			if (!writeEntityCallMethodEnd(pScriptDefModule, pMethodDescription))
+				return false;
+		}
+	}
+
+	if (!writeCellEntityCallEnd(pScriptDefModule))
+		return false;
+
+	if (!writeEntityCallEnd(pScriptDefModule))
+		return false;
+
+	return saveFile();
+}
+
+
+
+//-------------------------------------------------------------------------------------
+bool ClientSDKTypeScript::writeEntityMethods(ScriptDefModule* pEntityScriptDefModule,
+	ScriptDefModule* pCurrScriptDefModule)
+{
+	sourcefileBody_ += "\n";
+	headerfileBody_ += "\n";
+
+	ScriptDefModule::METHODDESCRIPTION_MAP& clientMethods = pCurrScriptDefModule->getClientMethodDescriptions();
+	ScriptDefModule::METHODDESCRIPTION_MAP::iterator methodIter = clientMethods.begin();
+	for (; methodIter != clientMethods.end(); ++methodIter)
+	{
+		MethodDescription* pMethodDescription = methodIter->second;
+		if (!writeEntityMethod(pEntityScriptDefModule, pCurrScriptDefModule, pMethodDescription, "#REPLACE#"))
+			return false;
+
+		std::string::size_type fHeaderPos = headerfileBody_.find("#REPLACE#");
+		std::string::size_type fSourcePos = sourcefileBody_.find("#REPLACE#");
+		KBE_ASSERT((fHeaderPos != std::string::npos) || (fSourcePos != std::string::npos));
+
+		std::string argsBody = "";
+
+		std::vector<DataType*>& argTypes = pMethodDescription->getArgTypes();
+		std::vector<DataType*>::iterator iter = argTypes.begin();
+
+		int i = 1;
+
+		for (; iter != argTypes.end(); ++iter)
+		{
+			DataType* pDataType = (*iter);
+
+			if (pDataType->type() == DATA_TYPE_FIXEDARRAY)
+			{
+				FixedArrayType* pFixedArrayType = static_cast<FixedArrayType*>(pDataType);
+
+				std::string argsTypeBody;
+				if (!writeEntityMethodArgs_ARRAY(pFixedArrayType, argsTypeBody, pFixedArrayType->aliasName()))
+				{
+					return false;
+				}
+
+				std::string nativetype = datatype2nativetype(argsTypeBody);
+
+				if (nativetype == "") {
+					argsBody += fmt::format("arg{}:KBETypes.{}, ", i++, argsTypeBody);
+				}
+				else {
+					argsBody += fmt::format("arg{}:{}, ", i++, argsTypeBody);
+				}
+			}
+			else if (pDataType->type() == DATA_TYPE_FIXEDDICT)
+			{
+				FixedDictType* pFixedDictType = static_cast<FixedDictType*>(pDataType);
+
+				std::string argsTypeBody = typeToType(pFixedDictType->aliasName());
+				if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+				{
+					return false;
+				}
+
+				std::string nativetype = datatype2nativetype(argsTypeBody);
+
+				if (nativetype == "") {
+					argsBody += fmt::format("arg{}:KBETypes.{}, ", i++, argsTypeBody);
+				}
+				else {
+					argsBody += fmt::format("arg{}:{}, ", i++, argsTypeBody);
+				}
+			}
+			else if (pDataType->type() != DATA_TYPE_DIGIT)
+			{
+				std::string argsTypeBody = typeToType(pDataType->getName());
+				if (!writeEntityMethodArgs_Const_Ref(pDataType, argsTypeBody))
+				{
+					return false;
+				}
+				std::string nativetype = datatype2nativetype(argsTypeBody);
+
+				if (nativetype == "") {
+					argsBody += fmt::format("arg{}:KBETypes.{}, ", i++, argsTypeBody);
+				}
+				else {
+					argsBody += fmt::format("arg{}:{}, ", i++, argsTypeBody);
+				}
+
+			}
+			else
+			{
+				std::string nativetype = datatype2nativetype(pDataType->getName());
+				if (nativetype == "") {
+					argsBody += fmt::format("arg{}:KBETypes.{}, ", i++, typeToType(pDataType->getName()));
+				}
+				else {
+					argsBody += fmt::format("arg{}:{}, ", i++, typeToType(pDataType->getName()));
+				}
+
+			}
+		}
+
+		if (argsBody.size() > 0)
+		{
+			argsBody.erase(argsBody.size() - 2, 2);
+		}
+
+		strutil::kbe_replace(headerfileBody_, "#REPLACE#", argsBody);
+		strutil::kbe_replace(sourcefileBody_, "#REPLACE#", argsBody);
+	}
+
+	return true;
+}
+
 //-------------------------------------------------------------------------------------
 void ClientSDKTypeScript::onCreateTypeFileName()
 {
-	sourcefileName_ = "KBETypes.ts";
+	//sourcefileName_ = "KBETypes.ts";
+	sourcefileName_ = "KBEngine.ts";
 }
 
 //-------------------------------------------------------------------------------------
@@ -169,7 +868,7 @@ void ClientSDKTypeScript::onCreateEngineMessagesModuleFileName()
 //-------------------------------------------------------------------------------------
 void ClientSDKTypeScript::onCreateDefsCustomTypesModuleFileName()
 {
-	sourcefileName_ = "CustomDataTypes.ts";
+	sourcefileName_ = "KBEngine.ts";
 }
 
 //-------------------------------------------------------------------------------------
@@ -231,11 +930,11 @@ bool ClientSDKTypeScript::writeServerErrorDescrsModuleEnd()
 	sourcefileBody_ += R"delimiter(
 	}
 
-	public static Clear() {
+	public Clear() {
 		ServerErrorDescrs.serverErrs.clear();
 	}
 
-	public static serverErrStr(id: number): string {
+	public serverErrStr(id: number): string {
 		let e: ServerErr | undefined = ServerErrorDescrs.serverErrs.get(id);
 		if (!e) {
 			return "";
@@ -244,7 +943,7 @@ bool ClientSDKTypeScript::writeServerErrorDescrsModuleEnd()
 		return e.name + "[" + e.descr + "]";
 	}
 
-	public static serverErr(id: number): ServerErr | undefined {
+	public serverErr(id: number): ServerErr | undefined {
 		let e: ServerErr | undefined = ServerErrorDescrs.serverErrs.get(id);
 		return e;
 	}
@@ -263,9 +962,7 @@ bool ClientSDKTypeScript::writeEngineMessagesModuleBegin()
 	
 	sourcefileBody_ += R"delimiter(
 import KBEDebug from "./KBEDebug";
-import * as DataTypes from "./DataTypes";
-import MemoryStream from "./MemoryStream";
-import { KBEngineApp } from "./KBEngine";
+import { KBEngineApp ,MemoryStream , DataTypes } from "./KBEngine";
 
 
 export class Message {
@@ -430,6 +1127,7 @@ export default class Messages {
 void ClientSDKTypeScript::onCreateEntityDefsModuleFileName()
 {
 	sourcefileName_ = "EntityDef.ts";
+	//sourcefileName_ = "KBEngine.ts";
 }
 
 //-------------------------------------------------------------------------------------
@@ -440,7 +1138,7 @@ bool ClientSDKTypeScript::writeEntityDefsModuleBegin()
 	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", "");
 
 	sourcefileBody_ += R"delimiter(
-import * as DataTypes from "./DataTypes";
+import { DataTypes , KBETypes } from "./KBEngine";
 import { ScriptModule } from "./ScriptModule";
 import { Vector3, Vector2 ,Vector4} from "./KBEMath";
 import { Property } from "./Property";
@@ -479,26 +1177,24 @@ export default class EntityDef {
 
     
     public static initDataTypes() {
-        EntityDef.datatypes["UINT8"] = new DataTypes.DATATYPE_UINT8();
-        EntityDef.datatypes["UINT16"] = new DataTypes.DATATYPE_UINT16();
-        EntityDef.datatypes["UINT32"] = new DataTypes.DATATYPE_UINT32();
-        EntityDef.datatypes["UINT64"] = new DataTypes.DATATYPE_UINT64();
-        EntityDef.datatypes["INT8"] = new DataTypes.DATATYPE_INT8();
-        EntityDef.datatypes["INT16"] = new DataTypes.DATATYPE_INT16();
-        EntityDef.datatypes["INT32"] = new DataTypes.DATATYPE_INT32();
-        EntityDef.datatypes["INT64"] = new DataTypes.DATATYPE_INT64();
-
-        EntityDef.datatypes["FLOAT"] = new DataTypes.DATATYPE_FLOAT();
-        EntityDef.datatypes["DOUBLE"] = new DataTypes.DATATYPE_DOUBLE();
-        EntityDef.datatypes["STRING"] = new DataTypes.DATATYPE_STRING();
-        EntityDef.datatypes["VECTOR2"] = new DataTypes.DATATYPE_VECTOR2();
-        EntityDef.datatypes["VECTOR3"] = new DataTypes.DATATYPE_VECTOR3();
-        EntityDef.datatypes["VECTOR4"] = new DataTypes.DATATYPE_VECTOR4();
-        EntityDef.datatypes["PYTHON"] = new DataTypes.DATATYPE_PYTHON();
-        EntityDef.datatypes["UNICODE"] = new DataTypes.DATATYPE_UNICODE();
-        EntityDef.datatypes["ENTITYCALL"] = new DataTypes.DATATYPE_ENTITYCALL();
-        EntityDef.datatypes["BLOB"] = new DataTypes.DATATYPE_BLOB();
-
+        EntityDef.datatypes.set("UINT8", new DataTypes.DATATYPE_UINT8());
+		EntityDef.datatypes.set("UINT16", new DataTypes.DATATYPE_UINT16());
+		EntityDef.datatypes.set("UINT32", new DataTypes.DATATYPE_UINT32());
+		EntityDef.datatypes.set("UINT64", new DataTypes.DATATYPE_UINT64());
+		EntityDef.datatypes.set("INT8", new DataTypes.DATATYPE_INT8());
+		EntityDef.datatypes.set("INT16", new DataTypes.DATATYPE_INT16());
+		EntityDef.datatypes.set("INT32", new DataTypes.DATATYPE_INT32());
+		EntityDef.datatypes.set("INT64", new DataTypes.DATATYPE_INT64());
+		EntityDef.datatypes.set("FLOAT", new DataTypes.DATATYPE_FLOAT());
+		EntityDef.datatypes.set("DOUBLE", new DataTypes.DATATYPE_DOUBLE());
+		EntityDef.datatypes.set("STRING", new DataTypes.DATATYPE_STRING());
+		EntityDef.datatypes.set("VECTOR2", new DataTypes.DATATYPE_VECTOR2());
+		EntityDef.datatypes.set("VECTOR3", new DataTypes.DATATYPE_VECTOR3());
+		EntityDef.datatypes.set("VECTOR4", new DataTypes.DATATYPE_VECTOR4());
+		EntityDef.datatypes.set("PYTHON", new DataTypes.DATATYPE_PYTHON());
+		EntityDef.datatypes.set("UNICODE", new DataTypes.DATATYPE_UNICODE());
+		EntityDef.datatypes.set("ENTITYCALL", new DataTypes.DATATYPE_ENTITYCALL());
+		EntityDef.datatypes.set("BLOB", new DataTypes.DATATYPE_BLOB());
     }
 
 )delimiter";
@@ -578,8 +1274,8 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitDefType(const DataType* pData
 
 	if (strcmp(pDataType->getName(), "FIXED_DICT") == 0)
 	{
-		sourcefileBody_ += fmt::format("\t\t\tlet datatype = new DATATYPE_{}();\n",  typeName);
-		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes[typeName] = datatype;\n");
+		sourcefileBody_ += fmt::format("\t\t\tlet datatype = new KBETypes.DATATYPE_{}();\n",  typeName);
+		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes.set(typeName, datatype);\n");
 	}
 	else if (strcmp(pDataType->getName(), "ARRAY") == 0)
 	{
@@ -590,17 +1286,17 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitDefType(const DataType* pData
 			strcmp(pFixedArrayType->getDataType()->getName(), "ARRAY") == 0)
 			typeID = pFixedArrayType->getDataType()->id();
 
-		sourcefileBody_ += fmt::format("\t\t\tlet datatype = new DATATYPE_{}();\n", typeName);
-		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes[typeName] = datatype;\n");
+		sourcefileBody_ += fmt::format("\t\t\tlet datatype = new KBETypes.DATATYPE_{}();\n", typeName);
+		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes.set(typeName, datatype);\n");
 	}
 	else
 	{
 		sourcefileBody_ += fmt::format("\t\t\tlet name = \"{}\";\n", pDataType->getName());
 		sourcefileBody_ += fmt::format("\t\t\tlet val = EntityDef.datatypes.get(name);\n");
-		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes[typeName] = val;\n");
+		sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatypes.set(typeName, val);\n");
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\tEntityDef.id2datatypes[utype] = EntityDef.datatypes[typeName];\n");
+	sourcefileBody_ += fmt::format("\t\t\tEntityDef.id2datatypes[utype] = EntityDef.datatypes.get(typeName);\n");
 	sourcefileBody_ += fmt::format("\t\t\tEntityDef.datatype2id[typeName] = utype;\n");
 	sourcefileBody_ += fmt::format("\t\t}}\n\n");
 
@@ -610,7 +1306,7 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitDefType(const DataType* pData
 //-------------------------------------------------------------------------------------
 void ClientSDKTypeScript::onEntityCallModuleFileName(const std::string& moduleName)
 {
-	sourcefileName_ = std::string("EntityCall") + moduleName + moduleSuffix + ".cs";
+	sourcefileName_ = std::string("EntityCall") + moduleName + moduleSuffix + ".ts";
 }
 
 //-------------------------------------------------------------------------------------
@@ -620,31 +1316,61 @@ bool ClientSDKTypeScript::writeEntityCallBegin(ScriptDefModule* pScriptDefModule
 	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", fmt::format("\t\n",
 		sourcefileName_));
 
-	sourcefileBody_ += "namespace KBEngine\n{\n";
-	sourcefileBody_ += "\tusing UnityEngine;\n";
-	sourcefileBody_ += "\tusing System;\n";
-	sourcefileBody_ += "\tusing System.Collections;\n";
-	sourcefileBody_ += "\tusing System.Collections.Generic;\n\n";
+	sourcefileBody_ += "import { EntityCall,DataTypes,KBETypes } from './KBEngine';\n";
+	sourcefileBody_ += "import EntityDef from './EntityDef';\n";
+	//sourcefileBody_ += "import * as KBEngine from './KBEngine';\n";
 
-	sourcefileBody_ += std::string("\t// defined in */scripts/entity_defs/") + pScriptDefModule->getName() + ".def\n";
+
+	// 导入组件call
+	if (!pScriptDefModule->isComponentModule())
+	{
+		std::set<std::string> uniqueComponentCallStrings;
+
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP clientPropertys = pScriptDefModule->getClientPropertyDescriptions();
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator propIter = clientPropertys.begin();
+		for (; propIter != clientPropertys.end(); ++propIter)
+		{
+			PropertyDescription* pPropertyDescription = propIter->second;
+
+			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
+				continue;
+
+			EntityComponentType* pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
+
+			
+
+			uniqueComponentCallStrings.insert(fmt::format("import {{ EntityBaseEntityCall_{}{} }} from './EntityCall{}{}';", pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix));
+			uniqueComponentCallStrings.insert(fmt::format("import {{ EntityCellEntityCall_{}{} }} from './EntityCall{}{}';", pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix));
+		}
+
+
+		for (auto it = uniqueComponentCallStrings.begin(); it != uniqueComponentCallStrings.end(); ++it) {
+			sourcefileBody_ += fmt::format("{}\n",*it);
+		}
+
+		
+	}
+
+
+	sourcefileBody_ += std::string("// defined in */scripts/entity_defs/") + pScriptDefModule->getName() + ".def\n";
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeEntityCallEnd(ScriptDefModule* pScriptDefModule)
 {
-	sourcefileBody_ += fmt::format("\t}}\n");
+	//sourcefileBody_ += fmt::format("\t}}\n");
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeEntityCallMethodBegin(ScriptDefModule* pScriptDefModule, MethodDescription* pMethodDescription, const char* fillString1, const char* fillString2, COMPONENT_TYPE componentType)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic void {}({})\n\t\t{{\n", pMethodDescription->getName(), fillString1);
+	sourcefileBody_ += fmt::format("\tpublic {}({}){{\n", pMethodDescription->getName(), fillString1);
 
-	sourcefileBody_ += fmt::format("\t\t\tBundle pBundle = newCall(\"{}\", {});\n", pMethodDescription->getName(), (pScriptDefModule->isComponentModule() ? "entityComponentPropertyID" : "0"));
-	sourcefileBody_ += fmt::format("\t\t\tif(pBundle == null)\n");
-	sourcefileBody_ += fmt::format("\t\t\t\treturn;\n\n");
+	sourcefileBody_ += fmt::format("\t\tlet pBundle = this.NewCallToMethod(\"{}\", {});\n", pMethodDescription->getName(), (pScriptDefModule->isComponentModule() ? "this.entityComponentPropertyID" : "0"));
+	sourcefileBody_ += fmt::format("\t\tif(pBundle == null)\n");
+	sourcefileBody_ += fmt::format("\t\t\treturn;\n\n");
 
 	std::vector<DataType*>& argTypes = pMethodDescription->getArgTypes();
 	std::vector<DataType*>::iterator iter = argTypes.begin();
@@ -659,20 +1385,20 @@ bool ClientSDKTypeScript::writeEntityCallMethodBegin(ScriptDefModule* pScriptDef
 
 		if (pDataType->type() == DATA_TYPE_FIXEDDICT)
 		{
-			writeName = fmt::format("((DATATYPE_{})EntityDef.id2datatypes[{}]).addToStreamEx(bundle, arg{})",
-				pDataType->aliasName(), pDataType->id(), i);
+			writeName = fmt::format("(EntityDef.id2datatypes[{}] as KBETypes.DATATYPE_{}).addToStreamEx(this.bundle!, arg{})",
+				pDataType->id(),pDataType->aliasName(), i);
 		}
 		else if (pDataType->type() == DATA_TYPE_FIXEDARRAY)
 		{
 			if (strlen(pDataType->aliasName()) > 0)
 			{
-				writeName = fmt::format("((DATATYPE_{})EntityDef.id2datatypes[{}]).addToStreamEx(bundle, arg{})",
-					pDataType->aliasName(), pDataType->id(), i);
+				writeName = fmt::format("(EntityDef.id2datatypes[{}] as KBETypes.DATATYPE_{}).addToStreamEx(this.bundle!, arg{})",
+					pDataType->id(), pDataType->aliasName(),  i);
 			}
 			else
 			{
-				writeName = fmt::format("((DATATYPE_AnonymousArray_{})EntityDef.id2datatypes[{}]).addToStreamEx(bundle, arg{})",
-					pDataType->id(), pDataType->id(), i);
+				writeName = fmt::format("(EntityDef.id2datatypes[{}] as KBETypes.DATATYPE_AnonymousArray_{}).addToStreamEx(this.bundle!, arg{})",
+					pDataType->id(), pDataType->id(),  i);
 			}
 		}
 		else
@@ -681,22 +1407,34 @@ bool ClientSDKTypeScript::writeEntityCallMethodBegin(ScriptDefModule* pScriptDef
 			std::transform(writeName.begin(), writeName.end(), writeName.begin(), tolower);
 			writeName[0] = std::toupper(writeName[0]);
 
-			writeName = fmt::format("bundle.write{}(arg{})", writeName, i);
+			
+
+			if (writeName == "Uint64") {
+				//writeName = fmt::format("stream.Write{}(DataTypes.KB_UINT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("this.bundle!.Write{}(DataTypes.KB_UINT64.fromBigInt(arg{}))", writeName, i);
+			}
+			else if (writeName == "Int64") {
+				//writeName = fmt::format("stream.Write{}(DataTypes.KB_INT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("this.bundle!.Write{}(DataTypes.KB_INT64.fromBigInt(arg{}))", writeName, i);
+			}
+			else {
+				writeName = fmt::format("this.bundle!.Write{}(arg{})", writeName, i);
+			}
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t{};\n", writeName);
+		sourcefileBody_ += fmt::format("\t\t{};\n", writeName);
 
 		i++;
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\tsendCall(null);\n");
+	sourcefileBody_ += fmt::format("\t\tthis.SendCall();\n");
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeEntityCallMethodEnd(ScriptDefModule* pScriptDefModule, MethodDescription* pMethodDescription)
 {
-	sourcefileBody_ += fmt::format("\t\t}}\n\n");
+	sourcefileBody_ += fmt::format("\t}}\n\n");
 	return true;
 }
 
@@ -706,7 +1444,7 @@ bool ClientSDKTypeScript::writeBaseEntityCallBegin(ScriptDefModule* pScriptDefMo
 	std::string newModuleName;
 
 	newModuleName = std::string("EntityBaseEntityCall_") + std::string(pScriptDefModule->getName()) + moduleSuffix;
-	sourcefileBody_ += fmt::format("\tpublic class {} : EntityCall\n\t{{\n", newModuleName);
+	sourcefileBody_ += fmt::format("export class {} extends EntityCall {{\n", newModuleName);
 
 	if (!pScriptDefModule->isComponentModule())
 	{
@@ -723,33 +1461,34 @@ bool ClientSDKTypeScript::writeBaseEntityCallBegin(ScriptDefModule* pScriptDefMo
 
 			EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 
-			sourcefileBody_ += fmt::format("\t\tpublic EntityBaseEntityCall_{}{} {} = null;\n",
-				pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\tpublic {}: EntityBaseEntityCall_{}{};\n",
+				pPropertyDescription->getName(),pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
 
-			initstr += fmt::format("\t\t\t{} = new EntityBaseEntityCall_{}{}({}, id);\n",
+			initstr += fmt::format("\t\tthis.{} = new EntityBaseEntityCall_{}{}({}, this.id);\n",
 				pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getUType());
 		}
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic {}(Int32 eid, string ename) : base(eid, ename)\n\t\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("\n\tconstructor(eid: number, ename: string) {{\n");
+		sourcefileBody_ += fmt::format("\t\tsuper(eid, ename);\n");
 		sourcefileBody_ += initstr;
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t\tpublic UInt16 entityComponentPropertyID = 0;\n");
+		sourcefileBody_ += fmt::format("\tpublic entityComponentPropertyID:number = 0;\n");
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic {}(UInt16 ecpID, Int32 eid) : base(eid, \"{}\")\n\t\t{{\n", newModuleName, pScriptDefModule->getName());
-		sourcefileBody_ += fmt::format("\t\t\tentityComponentPropertyID = ecpID;\n");
+		sourcefileBody_ += fmt::format("\n\tconstructor(ecpID: number, eid: number) {{ \n\t\tsuper(eid, \"{}\");\n", pScriptDefModule->getName());
+		sourcefileBody_ += fmt::format("\t\tthis.entityComponentPropertyID = ecpID;\n");
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\ttype = ENTITYCALL_TYPE.ENTITYCALL_TYPE_BASE;\n");
-	sourcefileBody_ += fmt::format("\t\t}}\n\n");
+	sourcefileBody_ += fmt::format("\t\tthis.entityCallType = 1;\n");
+	sourcefileBody_ += fmt::format("\t}}\n\n");
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeBaseEntityCallEnd(ScriptDefModule* pScriptDefModule)
 {
-	sourcefileBody_ += fmt::format("\t}}\n");
+	sourcefileBody_ += fmt::format("}}\n");
 	return true;
 }
 
@@ -759,7 +1498,7 @@ bool ClientSDKTypeScript::writeCellEntityCallBegin(ScriptDefModule* pScriptDefMo
 	std::string newModuleName;
 
 	newModuleName = std::string("EntityCellEntityCall_") + std::string(pScriptDefModule->getName()) + moduleSuffix;
-	sourcefileBody_ += fmt::format("\tpublic class {} : EntityCall\n\t{{\n", newModuleName);
+	sourcefileBody_ += fmt::format("export class {} extends EntityCall{{\n", newModuleName);
 
 	if (!pScriptDefModule->isComponentModule())
 	{
@@ -774,36 +1513,36 @@ bool ClientSDKTypeScript::writeCellEntityCallBegin(ScriptDefModule* pScriptDefMo
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
+			EntityComponentType* pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 
-			sourcefileBody_ += fmt::format("\t\tpublic EntityCellEntityCall_{}{} {} = null;\n",
-				pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\tpublic {}:EntityCellEntityCall_{}{};\n",
+				pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
 
-			initstr += fmt::format("\t\t\t{} = new EntityCellEntityCall_{}{}({}, id);\n",
+			initstr += fmt::format("\t\tthis.{} = new EntityCellEntityCall_{}{}({}, this.id);\n",
 				pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getUType());
 		}
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic {}(Int32 eid, string ename) : base(eid, ename)\n\t\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("\n\tconstructor(eid: number, ename: string) {{ \n\t\tsuper(eid, ename);\n", newModuleName);
 		sourcefileBody_ += initstr;
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t\tpublic UInt16 entityComponentPropertyID = 0;\n");
+		sourcefileBody_ += fmt::format("\tpublic entityComponentPropertyID:number = 0;\n");
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic {}(UInt16 ecpID, Int32 eid) : base(eid, \"{}\")\n\t\t{{\n", newModuleName, pScriptDefModule->getName());
-		sourcefileBody_ += fmt::format("\t\t\tentityComponentPropertyID = ecpID;\n");
-		sourcefileBody_ += fmt::format("\t\t\tclassName = \"{}\";\n", pScriptDefModule->getName());
+		sourcefileBody_ += fmt::format("\n\tconstructor(ecpID: number, eid: number) {{ \n\t\tsuper(eid, \"{}\");\n", newModuleName, pScriptDefModule->getName());
+		sourcefileBody_ += fmt::format("\t\tthis.entityComponentPropertyID = ecpID;\n");
+		sourcefileBody_ += fmt::format("\t\tthis.className = \"{}\";\n", pScriptDefModule->getName());
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\ttype = ENTITYCALL_TYPE.ENTITYCALL_TYPE_CELL;\n");
-	sourcefileBody_ += fmt::format("\t\t}}\n\n");
+	sourcefileBody_ += fmt::format("\t\tthis.entityCallType = 0;\n");
+	sourcefileBody_ += fmt::format("\t}}\n\n");
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeCellEntityCallEnd(ScriptDefModule* pScriptDefModule)
 {
-	sourcefileBody_ += fmt::format("\t}}\n");
+	sourcefileBody_ += fmt::format("}}\n");
 	return true;
 }
 
@@ -814,20 +1553,19 @@ bool ClientSDKTypeScript::writeCustomDataTypesBegin()
 	sourcefileBody_ = headerBody;
 	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", "");*/
 
-	sourcefileBody_ +=  R"delimiter(
-import * as DataTypes from "./DataTypes";
-import MemoryStream from "./MemoryStream";
-import Bundle from "./Bundle";
-import * as KBETypes from "./KBETypes";
-
-)delimiter";
+//	sourcefileBody_ +=  R"delimiter(
+//import * as DataTypes from "./DataTypes";
+//import MemoryStream from "./MemoryStream";
+//import Bundle from "./Bundle";
+//
+//)delimiter";
 	return true;
 }
 
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeCustomDataTypesEnd()
 {
-	//sourcefileBody_ += "\n}";
+	sourcefileBody_ += "\n}";
 	return true;
 }
 
@@ -903,10 +1641,10 @@ bool ClientSDKTypeScript::createArrayChildClass(DataType* pRootDataType, DataTyp
 			//writeName = fmt::format("stream.Write{}(v[i])", writeName);
 
 			if (writeName == "Uint64") {
-				writeName = fmt::format("stream.Write{}(DataTypes.UINT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("stream.Write{}(DataTypes.KB_UINT64.fromBigInt(v[i]))", writeName);
 			}
 			else if (writeName == "Int64") {
-				writeName = fmt::format("stream.Write{}(DataTypes.INT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("stream.Write{}(DataTypes.KB_INT64.fromBigInt(v[i]))", writeName);
 			}
 			else {
 				writeName = fmt::format("stream.Write{}(v[i])", writeName);
@@ -983,10 +1721,10 @@ bool ClientSDKTypeScript::createArrayChildClass(DataType* pRootDataType, DataTyp
 			//writeName = fmt::format("stream.Write{}(v[i])", writeName);
 
 			if (writeName == "Uint64") {
-				writeName = fmt::format("stream.Write{}(DataTypes.UINT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("stream.Write{}(DataTypes.KB_UINT64.fromBigInt(v[i]))", writeName);
 			}
 			else if (writeName == "Int64") {
-				writeName = fmt::format("stream.Write{}(DataTypes.INT64.fromBigInt(v[i]))", writeName);
+				writeName = fmt::format("stream.Write{}(DataTypes.KB_INT64.fromBigInt(v[i]))", writeName);
 			}
 			else {
 				writeName = fmt::format("stream.Write{}(v[i])", writeName);
@@ -1040,10 +1778,10 @@ bool ClientSDKTypeScript::createArrayChildClass(DataType* pRootDataType, DataTyp
 		
 
 		if (writeName == "Uint64") {
-			writeName = fmt::format("stream.Write{}(DataTypes.UINT64.fromBigInt(v[i]))", writeName);
+			writeName = fmt::format("stream.Write{}(DataTypes.KB_UINT64.fromBigInt(v[i]))", writeName);
 		}
 		else if (writeName == "Int64") {
-			writeName = fmt::format("stream.Write{}(DataTypes.INT64.fromBigInt(v[i]))", writeName);
+			writeName = fmt::format("stream.Write{}(DataTypes.KB_INT64.fromBigInt(v[i]))", writeName);
 		}
 		else {
 			writeName = fmt::format("stream.Write{}(v[i])", writeName);
@@ -1191,9 +1929,9 @@ bool ClientSDKTypeScript::writeCustomDataType(const DataType* pDataType)
 					writeName[0] = std::toupper(writeName[0]);
 
 					if (writeName == "Uint64" ) {
-						sourcefileBody_ += fmt::format("\t\tstream.Write{}(DataTypes.UINT64.fromBigInt(v.{}));\n", writeName, keyiter->first);
+						sourcefileBody_ += fmt::format("\t\tstream.Write{}(DataTypes.KB_UINT64.fromBigInt(v.{}));\n", writeName, keyiter->first);
 					}else if ( writeName == "Int64") {
-						sourcefileBody_ += fmt::format("\t\tstream.Write{}(DataTypes.INT64.fromBigInt(v.{}));\n", writeName, keyiter->first);
+						sourcefileBody_ += fmt::format("\t\tstream.Write{}(DataTypes.KB_INT64.fromBigInt(v.{}));\n", writeName, keyiter->first);
 					}
 					else {
 						sourcefileBody_ += fmt::format("\t\tstream.Write{}(v.{});\n", writeName, keyiter->first);
@@ -1270,36 +2008,46 @@ bool ClientSDKTypeScript::writeCustomDataType(const DataType* pDataType)
 		{
 			readName = fmt::format("itemType.createFromStreamEx(stream)", readName);
 
-			sourcefileBody_ += fmt::format("\tprivate DATATYPE_{} itemType = new DATATYPE_{}();\n\n",
+			sourcefileBody_ += fmt::format("\tprivate  itemType:DATATYPE_{} = new DATATYPE_{}();\n\n",
 			pFixedArrayType->getDataType()->aliasName(), pFixedArrayType->getDataType()->aliasName());
 
-			sourcefileBody_ += fmt::format("\tpublic {} createFromStreamEx(MemoryStream stream) // 22222\n\t\t{{\n", typeName);
-			sourcefileBody_ += fmt::format("\t\tUInt32 size = stream.readUint32();\n");
-			sourcefileBody_ += fmt::format("\t\t{} datas = new {}();\n\n", typeName, typeName);
+			sourcefileBody_ += fmt::format("\tpublic  createFromStreamEx(stream:MemoryStream):{}{{ // 22222\n", typeName);
+			sourcefileBody_ += fmt::format("\t\tlet size = stream.ReadUint32();\n");
+			sourcefileBody_ += fmt::format("\t\tlet datas = new {}();\n\n", typeName);
 			sourcefileBody_ += fmt::format("\t\twhile(size > 0)\n");
 			sourcefileBody_ += fmt::format("\t\t{{\n");
 			sourcefileBody_ += fmt::format("\t\t\t--size;\n");
-			sourcefileBody_ += fmt::format("\t\t\tdatas.Add({});\n", readName);
+			sourcefileBody_ += fmt::format("\t\t\tdatas.push(this.{});\n", readName);
 			sourcefileBody_ += fmt::format("\t\t}}\n\n");
 			sourcefileBody_ += fmt::format("\t\treturn datas;\n");
 			sourcefileBody_ += fmt::format("\t}}\n\n");
 
-			sourcefileBody_ += fmt::format("\tpublic void addToStreamEx(Bundle stream, {} v)\n\t\t{{\n", typeName);
-			sourcefileBody_ += fmt::format("\t\tstream.writeUint32((UInt32)v.Count);\n");
-			sourcefileBody_ += fmt::format("\t\tfor(int i=0; i<v.Count; ++i)\n");
+			sourcefileBody_ += fmt::format("\tpublic addToStreamEx(stream:Bundle, v:{}){{\n", typeName);
+			sourcefileBody_ += fmt::format("\t\tstream.WriteUint32(v.length >>> 0 );\n");
+			sourcefileBody_ += fmt::format("\t\tfor(let i=0; i< v.length; ++i)\n");
 			sourcefileBody_ += fmt::format("\t\t{{\n");
 
 			std::string writeName;
 			if (isFixedType)
 			{
-				writeName = fmt::format("itemType.addToStreamEx(stream, v[i])", writeName);
+				writeName = fmt::format("this.itemType.addToStreamEx(stream, v[i])", writeName);
 			}
 			else
 			{
 				writeName = datatype2nativetype(pFixedArrayType->getDataType()->getName());
 				std::transform(writeName.begin(), writeName.end(), writeName.begin(), tolower);
 				writeName[0] = std::toupper(writeName[0]);
-				writeName = fmt::format("stream.write{}(v[i])", writeName);
+
+				if (writeName == "Uint64") {
+					writeName = fmt::format("stream.Write{}(DataTypes.KB_UINT64.fromBigInt(v[i]))", writeName);
+				}
+				else if (writeName == "Int64") {
+					writeName = fmt::format("stream.Write{}(DataTypes.KB_INT64.fromBigInt(v[i]))", writeName);
+				}
+				else {
+					writeName = fmt::format("stream.Write{}(v[i])", writeName);
+				}
+				
 			}
 
 			sourcefileBody_ += fmt::format("\t\t\t{};\n", writeName);
@@ -1310,18 +2058,18 @@ bool ClientSDKTypeScript::writeCustomDataType(const DataType* pDataType)
 		}
 		else if (strcmp(pFixedArrayType->getDataType()->getName(), "ARRAY") == 0)
 		{
-			readName = fmt::format("itemType.createFromStreamEx(stream) // 33333", readName);
+			readName = fmt::format("itemType.createFromStreamEx(stream){{ // 33333", readName);
 
 			sourcefileBody_ += fmt::format("\tprivate DATATYPE_{} itemType = new DATATYPE_{}();\n\n",
 				className + "_ChildArray", className + "_ChildArray");
 
 			createArrayChildClass(pFixedArrayType, pFixedArrayType->getDataType(), className + "_ChildArray", "\t\t");
 
-			sourcefileBody_ += fmt::format("\tpublic {} createFromStreamEx(MemoryStream stream)\n\t\t{{\n", typeName);
+			sourcefileBody_ += fmt::format("\tpublic {} createFromStreamEx(MemoryStream stream){{\n", typeName);
 			sourcefileBody_ += fmt::format("\t\treturn {};\n", readName);
 			sourcefileBody_ += fmt::format("\t}}\n\n");
 
-			sourcefileBody_ += fmt::format("\tpublic void addToStreamEx(Bundle stream, {} v)\n\t\t{{\n", typeName);
+			sourcefileBody_ += fmt::format("\tpublic void addToStreamEx(Bundle stream, {} v) {{\n", typeName);
 			std::string writeName = fmt::format("itemType.addToStreamEx(stream, v)", writeName);
 			sourcefileBody_ += fmt::format("\t\t{};\n", writeName);
 			sourcefileBody_ += fmt::format("\t}}\n");
@@ -1425,7 +2173,7 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitScript_MethodDescr(ScriptDefM
 		if (componentType == CLIENT_TYPE)
 		{
 			sourcefileBody_ += fmt::format("\t\tp{}Module.useMethodDescrAlias = true;\n", pScriptDefModule->getName());
-			sourcefileBody_ += fmt::format("\t\tp{}Module.idmethods[p{}_{}.aliasID] = p{}_{}; // 可能需要转(UInt16)\n\n",
+			sourcefileBody_ += fmt::format("\t\tp{}Module.idmethods[DataTypes.NumberUtil.toUInt16(p{}_{}.aliasID)] = p{}_{}; // 可能需要转(UInt16)\n\n",
 				pScriptDefModule->getName(), pScriptDefModule->getName(), pDescr->getName(), pScriptDefModule->getName(), pDescr->getName());
 		}
 		else
@@ -1528,7 +2276,7 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitScript_PropertyDescr(ScriptDe
 	if (pDescr->aliasID() != -1)
 	{
 		sourcefileBody_ += fmt::format("\t\tp{}Module.usePropertyDescrAlias = true;\n", pScriptDefModule->getName());
-		sourcefileBody_ += fmt::format("\t\tp{}Module.idpropertys[p{}_{}.aliasID] = p{}_{};  // 可能需要转(UInt16)\n\n",
+		sourcefileBody_ += fmt::format("\t\tp{}Module.idpropertys[DataTypes.NumberUtil.toUInt16(p{}_{}.aliasID)] = p{}_{};  // 可能需要转(UInt16)\n\n",
 			pScriptDefModule->getName(), pScriptDefModule->getName(), pDescr->getName(), pScriptDefModule->getName(), pDescr->getName());
 	}
 	else
@@ -1551,7 +2299,9 @@ bool ClientSDKTypeScript::writeTypesBegin()
 	strutil::kbe_replace(sourcefileBody_, "#REPLACE#", "");
 
 
-	sourcefileBody_ += "\n\nimport { Vector2, Vector3, Vector4 } from \"./KBEMath\";\n// defined in */entity_defs/types.xml\n\n";
+	sourcefileBody_ += "\nexport namespace KBETypes {\n";
+	sourcefileBody_ += "\n// defined in */entity_defs/types.xml\n\n";
+	//sourcefileBody_ += "\n\nimport { Vector2, Vector3, Vector4 } from \"./KBEMath\";\n// defined in */entity_defs/types.xml\n\n";
 
 	return true;
 }
@@ -1898,21 +2648,69 @@ bool ClientSDKTypeScript::writeEntityModuleBegin(ScriptDefModule* pEntityScriptD
 		pEntityScriptDefModule->getName(), pEntityScriptDefModule->getName(), moduleSuffix));
 
 	sourcefileBody_ += R"delimiter(
-import Entity from './Entity';
-import { EntityComponent } from './EntityComponent';
-import { EntityCall } from './EntityCall';
-import MemoryStream from './MemoryStream';
-import * as DataTypes from './DataTypes';
+import {Entity , EntityComponent , EntityCall , MemoryStream , DataTypes , KBETypes} from './KBEngine';
+import * as ExportEntity from './ExportEntity';
 
-import { EntityBaseEntityCall_AccountBase, EntityCellEntityCall_AccountBase } from './EntityCallAccountBase';
+import { Method } from './Method';
+import { ScriptModule } from './ScriptModule';
+import EntityDef from './EntityDef';
 import { Property } from './Property';
+import { Vector2, Vector3, Vector4 } from './KBEMath';
 
 )delimiter";
+
+
+	sourcefileBody_ += fmt::format("import {{ EntityBaseEntityCall_{}, EntityCellEntityCall_{} }} from './EntityCall{}';\n\n", newModuleName, newModuleName, newModuleName);
+
+
+
+
+	{
+		std::set<std::string> uniqueEntityComponenStrings;
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP& clientPropertys = pEntityScriptDefModule->getClientPropertyDescriptions();
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator propIter = clientPropertys.begin();
+		for (; propIter != clientPropertys.end(); ++propIter)
+		{
+			PropertyDescription* pPropertyDescription = propIter->second;
+
+			if (pPropertyDescription->getDataType()->type() == DATA_TYPE_ENTITY_COMPONENT)
+			{
+				EntityComponentType* pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
+
+				//sourcefileBody_ += fmt::format("import {{ {}{} }} from './{}{}';\n" , pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
+
+				uniqueEntityComponenStrings.insert(fmt::format("{}{}",  pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix));
+			}
+		}
+
+		for (auto it = uniqueEntityComponenStrings.begin(); it != uniqueEntityComponenStrings.end(); ++it) {
+			sourcefileBody_ += fmt::format("import {{ {} }} from './{}';\n", *it, *it);
+		}
+
+		// 格式化为 "a", "b", "c"
+		//std::ostringstream oss;
+		//for (auto it = uniqueEntityComponenStrings.begin(); it != uniqueEntityComponenStrings.end(); ++it) {
+		//	if (it != uniqueEntityComponenStrings.begin()) {
+		//		oss << ", ";
+		//	}
+		//	oss << "\"" << *it << "\"";
+		//}
+
+		//std::string result = oss.str();
+		//if (!result.empty()) {
+		//	sourcefileBody_ += fmt::format("import {{ {} }} from './EntityCall{}';\n\n", result);
+		//}
+
+		
+
+	}
+
+
 	sourcefileBody_ += std::string("// defined in */scripts/entity_defs/") + pEntityScriptDefModule->getName() + ".def\n";
 
 	if (pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("export abstract class {} extends EntityComponent\n\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("export abstract class {} extends EntityComponent{{\n", newModuleName);
 
 		// 写entityCall属性
 		sourcefileBody_ += fmt::format("\tpublic baseEntityCall:EntityBaseEntityCall_{} | null = null;\n", newModuleName);
@@ -1921,7 +2719,7 @@ import { Property } from './Property';
 	else
 	{
 		sourcefileBody_ += fmt::format("// Please inherit and implement \"class {} extends {}\"\n", pEntityScriptDefModule->getName(), newModuleName);
-		sourcefileBody_ += fmt::format("export abstract class {} extends Entity\n\t{{\n", newModuleName);
+		sourcefileBody_ += fmt::format("export abstract class {} extends Entity{{\n", newModuleName);
 
 		// 写entityCall属性
 		sourcefileBody_ += fmt::format("\tpublic baseEntityCall:EntityBaseEntityCall_{} | null = null;\n", newModuleName);
@@ -1934,7 +2732,7 @@ import { Property } from './Property';
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeEntityModuleEnd(ScriptDefModule* pEntityScriptDefModule)
 {
-	sourcefileBody_ += "\t}\n}";
+	sourcefileBody_ += "\n}";
 	return true;
 }
 
@@ -1987,28 +2785,67 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 	if (pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void createFromStream(MemoryStream stream)\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\tbase.createFromStream(stream);\n");
-		sourcefileBody_ += fmt::format("\t\t}}\n");
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onGetBase()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\townerID = owner.id;\n");
-		sourcefileBody_ += fmt::format("\t\t\tbaseEntityCall = new EntityBaseEntityCall_{}(entityComponentPropertyID, ownerID);\n", newModuleName);
-		sourcefileBody_ += fmt::format("\t\t}}\n");
+		sourcefileBody_ += R"delimiter(
+	public override  createFromStream(stream:MemoryStream )
+	{
+		super.createFromStream(stream);
+	}
+)delimiter";
+		
+		std::string onGetBaseTpl = R"delimiter(
+	public override onGetBase()
+	{{
+		this.ownerID = this.owner.id;
+		this.baseEntityCall = new EntityBaseEntityCall_{}(this.entityComponentPropertyID, this.ownerID);
+	}}
+)delimiter";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onGetCell()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\townerID = owner.id;\n");
-		sourcefileBody_ += fmt::format("\t\t\tcellEntityCall = new EntityCellEntityCall_{}(entityComponentPropertyID, ownerID);\n", newModuleName);
-		sourcefileBody_ += fmt::format("\t\t}}\n");
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onLoseCell()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\tcellEntityCall = null;\n", newModuleName);
-		sourcefileBody_ += fmt::format("\t\t}}\n");
+		std::string onGetCellTpl = R"delimiter(
+	public override onGetCell()
+	{{
+		this.ownerID = this.owner.id;
+		this.cellEntityCall = new EntityCellEntityCall_{}(this.entityComponentPropertyID, this.ownerID);
+	}}
+)delimiter";
+
+
+		std::string onLoseCellTpl = R"delimiter(
+	public override onLoseCell()
+	{{
+		this.cellEntityCall = null;
+	}}
+)delimiter";
+
+		sourcefileBody_ += fmt::format(onGetBaseTpl, newModuleName);
+		sourcefileBody_ += fmt::format(onGetCellTpl, newModuleName);
+		sourcefileBody_ += fmt::format(onLoseCellTpl, newModuleName);
+
+		/*sourcefileBody_ += fmt::format("\n\tpublic override void onGetBase()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\townerID = owner.id;\n");
+		sourcefileBody_ += fmt::format("\t\tbaseEntityCall = new EntityBaseEntityCall_{}(entityComponentPropertyID, ownerID);\n", newModuleName);
+		sourcefileBody_ += fmt::format("\t}}\n");
+
+		sourcefileBody_ += fmt::format("\n\tpublic override void onGetCell()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\townerID = owner.id;\n");
+		sourcefileBody_ += fmt::format("\t\tcellEntityCall = new EntityCellEntityCall_{}(entityComponentPropertyID, ownerID);\n", newModuleName);
+		sourcefileBody_ += fmt::format("\t}}\n");
+
+		sourcefileBody_ += fmt::format("\n\tpublic override void onLoseCell()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\tcellEntityCall = null;\n", newModuleName);
+		sourcefileBody_ += fmt::format("\t}}\n");*/
 	}
 
 	if (!pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\n\t\tpublic {}()\n\t\t{{\n", newModuleName);
+		//sourcefileBody_ += fmt::format("\n\tpublic {}(){{\n", newModuleName);
+
+		sourcefileBody_ += R"delimiter(
+	constructor(){
+		super();
+)delimiter";
+
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP clientPropertys = pEntityScriptDefModule->getClientPropertyDescriptions();
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
@@ -2020,22 +2857,49 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 			EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 
-			sourcefileBody_ += fmt::format("\t\t\tforeach (System.Reflection.Assembly ass in AppDomain.CurrentDomain.GetAssemblies())\n\t\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\t\tType entityComponentScript = ass.GetType(\"KBEngine.{}\");\n", pEntityComponentType->pScriptDefModule()->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\tif(entityComponentScript != null)\n\t\t\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{} = ({}{})Activator.CreateInstance(entityComponentScript);\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{}.owner = this;\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{}.entityComponentPropertyID = {};\n", pPropertyDescription->getName(), pPropertyDescription->getUType());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{}.name_ = \"{}\";\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t}}\n\t\t\t}}\n\n");
 
-			sourcefileBody_ += fmt::format("\t\t\tif({} == null)\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\tthrow new Exception(\"Please inherit and implement, such as: \\\"class {} : {}{}\\\"\");\n\n", pEntityComponentType->pScriptDefModule()->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
+
+			std::string loadEntityTpl = R"delimiter(
+		{{
+			let entityComponentScript = ExportEntity.GetEntityScript("{}");
+			if(entityComponentScript != null){{
+				this.{} = new entityComponentScript();
+				this.{}!.owner = this;
+				this.{}!.entityComponentPropertyID = {};
+				this.{}!.name_ = "{}";
+			}}
+		}}
+
+
+		if(this.{} == null)
+			throw new Error("Please inherit and implement, such as: class {} extends {}{}");
+
+)delimiter";
+
+			sourcefileBody_ += fmt::format(loadEntityTpl, pEntityComponentType->pScriptDefModule()->getName(),
+				pPropertyDescription->getName(),
+				pPropertyDescription->getName(),
+				pPropertyDescription->getName(), pPropertyDescription->getUType(),
+				pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(),
+				pPropertyDescription->getName(),
+				pEntityComponentType->pScriptDefModule()->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
+
+			/*sourcefileBody_ += fmt::format("\t\tforeach (System.Reflection.Assembly ass in AppDomain.CurrentDomain.GetAssemblies())\n\t\t\t{{\n");
+			sourcefileBody_ += fmt::format("\t\t\tType entityComponentScript = ass.GetType(\"KBEngine.{}\");\n", pEntityComponentType->pScriptDefModule()->getName());
+			sourcefileBody_ += fmt::format("\t\t\tif(entityComponentScript != null)\n\t\t\t\t{{\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t{} = ({}{})Activator.CreateInstance(entityComponentScript);\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);
+			sourcefileBody_ += fmt::format("\t\t\t\t{}.owner = this;\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\t\t{}.entityComponentPropertyID = {};\n", pPropertyDescription->getName(), pPropertyDescription->getUType());
+			sourcefileBody_ += fmt::format("\t\t\t\t{}.name_ = \"{}\";\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName());
+			sourcefileBody_ += fmt::format("\t\t\t}}\n\t\t}}\n\n");
+
+			sourcefileBody_ += fmt::format("\t\tif({} == null)\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\tthrow new Exception(\"Please inherit and implement, such as: \\\"class {} : {}{}\\\"\");\n\n", pEntityComponentType->pScriptDefModule()->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix);*/
 		}
 
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onComponentsEnterworld()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onComponentsEnterworld(){{\n");
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2044,12 +2908,12 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onEnterworld();\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onEnterworld?.();\n", pPropertyDescription->getName());
 		}
 
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onComponentsLeaveworld()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onComponentsLeaveworld(){{\n");
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2058,10 +2922,10 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onLeaveworld();\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\tthis.{}!.onLeaveworld?.();\n", pPropertyDescription->getName());
 		}
 
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
 		std::vector<PropertyDescription*> components;
 		propIter = clientPropertys.begin();
@@ -2075,24 +2939,24 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 		if (!components.empty())
 		{
-			sourcefileBody_ += fmt::format("\n\t\tpublic override List<EntityComponent> getComponents(string componentName, bool all)\n\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\tList<EntityComponent> founds = new List<EntityComponent>();\n\n");
+			sourcefileBody_ += fmt::format("\n\tpublic override getComponents(componentName: string, all: boolean) : EntityComponent[] {{\n");
+			sourcefileBody_ += fmt::format("\t\tlet founds: EntityComponent[] = [];\n\n");
 			std::vector<PropertyDescription*>::const_iterator iter = components.begin();
 			for (; iter != components.end(); ++iter)
 			{
 				PropertyDescription* pPropertyDescription = *iter;
-				sourcefileBody_ += fmt::format("\t\t\tif ({}.name_ == componentName)\n\t\t\t{{\n", pPropertyDescription->getName());
-				sourcefileBody_ += fmt::format("\t\t\t\tfounds.Add({});\n", pPropertyDescription->getName());
-				sourcefileBody_ += fmt::format("\t\t\t\tif (!all)\n");
-				sourcefileBody_ += fmt::format("\t\t\t\t\treturn founds;\n\t\t\t}}\n\n");
+				sourcefileBody_ += fmt::format("\t\tif (this.{}!.name_ == componentName){{\n", pPropertyDescription->getName());
+				sourcefileBody_ += fmt::format("\t\t\tfounds.push(this.{}!);\n", pPropertyDescription->getName());
+				sourcefileBody_ += fmt::format("\t\t\tif (!all)\n");
+				sourcefileBody_ += fmt::format("\t\t\t\treturn founds;\n\t\t}}\n\n");
 			}
 
-			sourcefileBody_ += "\t\t\treturn founds;\n";
-			sourcefileBody_ += "\t\t}\n";
+			sourcefileBody_ += "\t\treturn founds;\n";
+			sourcefileBody_ += "\t}\n";
 		}
 			
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onGetBase()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\tbaseEntityCall = new EntityBaseEntityCall_{}(id, className);\n", newModuleName);
+		sourcefileBody_ += fmt::format("\n\tpublic override onGetBase(){{\n");
+		sourcefileBody_ += fmt::format("\t\tthis.baseEntityCall = new EntityBaseEntityCall_{}(this.id, this.className);\n", newModuleName);
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2101,12 +2965,12 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onGetBase();\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onGetBase();\n", pPropertyDescription->getName());
 		}
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onGetCell()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\tcellEntityCall = new EntityCellEntityCall_{}(id, className);\n", newModuleName);
+		sourcefileBody_ += fmt::format("\n\tpublic override onGetCell(){{\n");
+		sourcefileBody_ += fmt::format("\t\tthis.cellEntityCall = new EntityCellEntityCall_{}(this.id, this.className);\n", newModuleName);
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2115,12 +2979,12 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onGetCell();\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onGetCell();\n", pPropertyDescription->getName());
 		}
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onLoseCell()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\tcellEntityCall = null;\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onLoseCell(){{\n");
+		sourcefileBody_ += fmt::format("\t\tthis.cellEntityCall = null;\n");
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2129,23 +2993,23 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onLoseCell();\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onLoseCell();\n", pPropertyDescription->getName());
 		}
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override EntityCall getBaseEntityCall()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\treturn baseEntityCall;\n");
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += fmt::format("\n\tpublic override getBaseEntityCall(){{\n");
+		sourcefileBody_ += fmt::format("\t\treturn this.baseEntityCall;\n");
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override EntityCall getCellEntityCall()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\treturn cellEntityCall;\n");
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += fmt::format("\n\tpublic override getCellEntityCall(){{\n");
+		sourcefileBody_ += fmt::format("\t\treturn this.cellEntityCall;\n");
+		sourcefileBody_ += "\t}\n";
 	}
 
 	// attach/detach组件
 	if (!pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void attachComponents()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override attachComponents(){{\n");
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP clientPropertys = pEntityScriptDefModule->getClientPropertyDescriptions();
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
@@ -2155,12 +3019,12 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onAttached(this);\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onAttached?.(this);\n", pPropertyDescription->getName());
 		}
 
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void detachComponents()\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override detachComponents(){{\n");
 		propIter = clientPropertys.begin();
 		for (; propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2169,44 +3033,41 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t{}.onDetached(this);\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.onDetached?.(this);\n", pPropertyDescription->getName());
 		}
 
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += "\t}\n";
 	}
 
 	if (pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\n\t\tpublic override ScriptModule getScriptModule()\n\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\treturn EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
-		sourcefileBody_ += "\t\t}\n";
+		sourcefileBody_ += fmt::format("\n\tpublic override getScriptModule() : ScriptModule{{\n");
+		sourcefileBody_ += fmt::format("\t\treturn EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
+		sourcefileBody_ += "\t}\n";
 	}
 
 	// 处理方法
 	if (!pEntityScriptDefModule->isComponentModule())
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onRemoteMethodCall(MemoryStream stream)\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onRemoteMethodCall(stream:MemoryStream){{\n");
 	else
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onRemoteMethodCall(UInt16 methodUtype, MemoryStream stream)\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onRemoteMethodCall(methodUtype:number, stream:MemoryStream){{\n");
 
-	sourcefileBody_ += fmt::format("\t\t\tScriptModule sm = EntityDef.moduledefs[\"{}\"];\n\n", pEntityScriptDefModule->getName());
+	sourcefileBody_ += fmt::format("\t\tlet sm:ScriptModule = EntityDef.moduledefs[\"{}\"];\n\n", pEntityScriptDefModule->getName());
 	
 	if (!pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\t\t\tUInt16 methodUtype = 0;\n");
-		sourcefileBody_ += fmt::format("\t\t\tUInt16 componentPropertyUType = 0;\n\n");
+		sourcefileBody_ += fmt::format("\t\tlet methodUtype = 0;\n");
+		sourcefileBody_ += fmt::format("\t\tlet componentPropertyUType = 0;\n\n");
 
-		sourcefileBody_ += fmt::format("\t\t\tif(sm.usePropertyDescrAlias)\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tcomponentPropertyUType = stream.readUint8();\n");
-		sourcefileBody_ += fmt::format("\t\t\t}}\n");
-		sourcefileBody_ += fmt::format("\t\t\telse\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tcomponentPropertyUType = stream.readUint16();\n");
-		sourcefileBody_ += fmt::format("\t\t\t}}\n\n");
+		sourcefileBody_ += fmt::format("\t\tif(sm.usePropertyDescrAlias){{\n");
+		sourcefileBody_ += fmt::format("\t\t\tcomponentPropertyUType = stream.ReadUint8();\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n");
+		sourcefileBody_ += fmt::format("\t\telse{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tcomponentPropertyUType = stream.ReadUint16();\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n\n");
 
-		sourcefileBody_ += fmt::format("\t\t\tif(sm.useMethodDescrAlias)\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tmethodUtype = stream.readUint8();\n");
+		sourcefileBody_ += fmt::format("\t\tif(sm.useMethodDescrAlias){{\n");
+		sourcefileBody_ += fmt::format("\t\t\tmethodUtype = stream.ReadUint8();\n");
 
 		bool foundComponentNoUseMethodDescrAlias = false;
 
@@ -2229,12 +3090,10 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 		if (foundComponentNoUseMethodDescrAlias)
 		{
-			sourcefileBody_ += fmt::format("\n\t\t\t\tif(componentPropertyUType > 0)\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\tbool useComponentMethodDescrAlias = true;\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\tProperty pComponentPropertyDescription = sm.idpropertys[componentPropertyUType];\n\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\tswitch(pComponentPropertyDescription.properUtype)\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{{\n");
+			sourcefileBody_ += fmt::format("\n\t\t\tif(componentPropertyUType > 0){{\n");
+			sourcefileBody_ += fmt::format("\t\t\t\tlet useComponentMethodDescrAlias = true;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\tlet pComponentPropertyDescription:Property = sm.idpropertys[componentPropertyUType];\n\n");
+			sourcefileBody_ += fmt::format("\t\t\t\tswitch(pComponentPropertyDescription.properUtype){{\n");
 
 			for (propIter = clientPropertys.begin(); propIter != clientPropertys.end(); ++propIter)
 			{
@@ -2246,42 +3105,42 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 				EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 				if (!pEntityComponentType->pScriptDefModule()->useMethodDescrAlias())
 				{
-					sourcefileBody_ += fmt::format("\t\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-					sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tuseComponentMethodDescrAlias = false;\n", pPropertyDescription->getName());
-					sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tbreak;\n");
+					sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+					sourcefileBody_ += fmt::format("\t\t\t\t\t\tuseComponentMethodDescrAlias = false;\n", pPropertyDescription->getName());
+					sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
 				}
 			}
 
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tdefault:\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tbreak;\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t\tdefault:\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t}}\n\n");
 
-			sourcefileBody_ += fmt::format("\t\t\t\t\tif(!useComponentMethodDescrAlias)\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tstream.rpos -= 1;\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tmethodUtype = stream.readUint16();\n");
-			sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n");
-
+			sourcefileBody_ += fmt::format("\t\t\t\tif(!useComponentMethodDescrAlias)\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t{{\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t\tstream.rpos -= 1;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t\tmethodUtype = stream.ReadUint16();\n");
 			sourcefileBody_ += fmt::format("\t\t\t\t}}\n");
+
+			sourcefileBody_ += fmt::format("\t\t\t}}\n");
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t}}\n");
-		sourcefileBody_ += fmt::format("\t\t\telse\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tmethodUtype = stream.readUint16();\n");
-		sourcefileBody_ += fmt::format("\t\t\t}}\n\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n");
+		sourcefileBody_ += fmt::format("\t\telse\n");
+		sourcefileBody_ += fmt::format("\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tmethodUtype = stream.ReadUint16();\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n\n");
 
-		sourcefileBody_ += fmt::format("\t\t\tMethod method = null;\n\n");
+		sourcefileBody_ += fmt::format("\t\tlet method:Method | null = null;\n\n");
 
-		sourcefileBody_ += fmt::format("\t\t\tif(componentPropertyUType == 0)\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tmethod = sm.idmethods[methodUtype];\n");
-		sourcefileBody_ += fmt::format("\t\t\t}}\n");
-		sourcefileBody_ += fmt::format("\t\t\telse\n");
-		sourcefileBody_ += fmt::format("\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tProperty pComponentPropertyDescription = sm.idpropertys[componentPropertyUType];\n");
+		sourcefileBody_ += fmt::format("\t\tif(componentPropertyUType == 0)\n");
+		sourcefileBody_ += fmt::format("\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tmethod = sm.idmethods[methodUtype];\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n");
+		sourcefileBody_ += fmt::format("\t\telse\n");
+		sourcefileBody_ += fmt::format("\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tlet pComponentPropertyDescription:Property = sm.idpropertys[componentPropertyUType];\n");
 
-		sourcefileBody_ += fmt::format("\t\t\t\tswitch(pComponentPropertyDescription.properUtype)\n\t\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tswitch(pComponentPropertyDescription.properUtype){{\n");
 
 		for (propIter = clientPropertys.begin(); propIter != clientPropertys.end(); ++propIter)
 		{
@@ -2290,23 +3149,23 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			if (pPropertyDescription->getDataType()->type() != DATA_TYPE_ENTITY_COMPONENT)
 				continue;
 
-			sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\t{}.onRemoteMethodCall(methodUtype, stream);\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+			sourcefileBody_ += fmt::format("\t\t\t\t\tthis.{}!.onRemoteMethodCall(methodUtype, stream);\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\tdefault:\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t}}\n\n");
-		sourcefileBody_ += fmt::format("\t\t\t\treturn;\n");
+		sourcefileBody_ += fmt::format("\t\t\t\tdefault:\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
 		sourcefileBody_ += fmt::format("\t\t\t}}\n\n");
+		sourcefileBody_ += fmt::format("\t\t\treturn;\n");
+		sourcefileBody_ += fmt::format("\t\t}}\n\n");
 
-		sourcefileBody_ += fmt::format("\t\t\tswitch(method.methodUtype)\n\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\tswitch(method!.methodUtype){{\n");
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t\t\tMethod method = sm.idmethods[methodUtype];\n");
-		sourcefileBody_ += fmt::format("\t\t\tswitch(method.methodUtype)\n\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\tlet method:Method = sm.idmethods[methodUtype];\n");
+		sourcefileBody_ += fmt::format("\t\tswitch(method!.methodUtype){{\n");
 	}
 
 	ScriptDefModule::METHODDESCRIPTION_MAP& clientMethods = pEntityScriptDefModule->getClientMethodDescriptions();
@@ -2315,7 +3174,7 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 	{
 		MethodDescription* pMethodDescription = methodIter->second;
 
-		sourcefileBody_ += fmt::format("\t\t\t\tcase {}:\n", pMethodDescription->getUType());
+		sourcefileBody_ += fmt::format("\t\t\tcase {}:\n", pMethodDescription->getUType());
 		
 		std::vector<DataType*>& argTypes = pMethodDescription->getArgTypes();
 		std::vector<DataType*>::iterator iter = argTypes.begin();
@@ -2343,8 +3202,8 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 			std::string nativetype = datatype2nativetype(typeID);
 			if (strcmp(pDataType->getName(), "FIXED_DICT") == 0)
 			{
-				sourcefileBody_ += fmt::format("\t\t\t\t\t{} {}_arg{} = ((DATATYPE_{})method.args[{}]).createFromStreamEx(stream);\n",
-					pDataType->aliasName(), pMethodDescription->getName(), i, pDataType->aliasName(), (i - 1));
+				sourcefileBody_ += fmt::format("\t\t\t\tlet {}_arg{}:{}{} = method.args[{}].createFromStreamEx(stream);\n",
+					pMethodDescription->getName(), i, (datatype2nativetype(pDataType->aliasName()) == "" ? "KBETypes." : ""), pDataType->aliasName(), (i - 1));
 			}
 			else if(strcmp(pDataType->getName(), "ARRAY") == 0)
 			{
@@ -2353,19 +3212,26 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 				if (strlen(pDataType->aliasName()) > 0)
 				{
-					sourcefileBody_ += fmt::format("\t\t\t\t\t{} {}_arg{} = ((DATATYPE_{})method.args[{}]).createFromStreamEx(stream);\n",
-						pDataType->aliasName(), pMethodDescription->getName(), i, pDataType->aliasName(), (i - 1));
+					sourcefileBody_ += fmt::format("\t\t\t\tlet {}_arg{}:{}{} = method.args[{}].createFromStreamEx(stream);\n",
+						pMethodDescription->getName(), i, (datatype2nativetype(pDataType->aliasName()) == "" ? "KBETypes." : ""), pDataType->aliasName(), (i - 1));
 				}
 				else
 				{
-					sourcefileBody_ += fmt::format("\t\t\t\t\t{} {}_arg{} = ((DATATYPE_AnonymousArray_{})method.args[{}]).createFromStreamEx(stream);\n",
-						typestr, pMethodDescription->getName(), i, typeID, (i - 1));
+					sourcefileBody_ += fmt::format("\t\t\t\tlet {}_arg{}:{}{} = (method.args[{}] as DATATYPE_AnonymousArray_{}).createFromStreamEx(stream);\n",
+						pMethodDescription->getName(), i, (datatype2nativetype(typestr) == "" ? "KBETypes." : ""), typestr, typeID, (i - 1));
 				}
 			}
 			else
 			{
-				sourcefileBody_ += fmt::format("\t\t\t\t\t{} {}_arg{} = stream.read{}();\n",
-					typeToType(nativetype), pMethodDescription->getName(), i, readName);
+				if (readName == "Uint64" || readName == "Int64") {
+					sourcefileBody_ += fmt::format("\t\t\t\tlet {}_arg{}:{} = stream.Read{}().toBigInt();\n",
+						pMethodDescription->getName(), i, typeToType(nativetype), readName);
+				}
+				else {
+					sourcefileBody_ += fmt::format("\t\t\t\tlet {}_arg{}:{} = stream.Read{}();\n",
+						pMethodDescription->getName(), i, typeToType(nativetype), readName);
+				}
+				
 			}
 
 			++i;
@@ -2374,14 +3240,14 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 		if (argsStr.size() > 0)
 			argsStr.erase(argsStr.size() - 2, 2);
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\t{}({});\n", pMethodDescription->getName(), argsStr);
-		sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
+		sourcefileBody_ += fmt::format("\t\t\t\tthis.{}({});\n", pMethodDescription->getName(), argsStr);
+		sourcefileBody_ += fmt::format("\t\t\t\tbreak;\n");
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\t\tdefault:\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
-	sourcefileBody_ += fmt::format("\t\t\t}};\n");
-	sourcefileBody_ += "\t\t}\n";
+	sourcefileBody_ += fmt::format("\t\t\tdefault:\n");
+	sourcefileBody_ += fmt::format("\t\t\t\tbreak;\n");
+	sourcefileBody_ += fmt::format("\t\t}};\n");
+	sourcefileBody_ += "\t}\n";
 
 	// 处理属性
 	ENTITY_PROPERTY_UID posuid = 0;
@@ -2426,63 +3292,61 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 		spaceDescription.aliasID(ENTITY_BASE_PROPERTY_ALIASID_SPACEID);
 
 	if(pEntityScriptDefModule->isComponentModule())
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onUpdatePropertys(UInt16 propUtype, MemoryStream stream, int maxCount)\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onUpdatePropertys(propUtype:number, stream:MemoryStream, maxCount:number){{\n");
 	else
-		sourcefileBody_ += fmt::format("\n\t\tpublic override void onUpdatePropertys(MemoryStream stream)\n\t\t{{\n");
+		sourcefileBody_ += fmt::format("\n\tpublic override onUpdatePropertys(stream:MemoryStream){{\n");
 
-	sourcefileBody_ += fmt::format("\t\t\tScriptModule sm = EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
-	sourcefileBody_ += fmt::format("\t\t\tDictionary<UInt16, Property> pdatas = sm.idpropertys;\n\n");
+	sourcefileBody_ += fmt::format("\t\tlet sm:ScriptModule = EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
+	sourcefileBody_ += fmt::format("\t\tlet pdatas = sm.idpropertys;\n\n");
 
 	if (pEntityScriptDefModule->isComponentModule())
-		sourcefileBody_ += fmt::format("\t\t\twhile(stream.length() > 0 && maxCount-- != 0)\n");
+		sourcefileBody_ += fmt::format("\t\twhile(stream.Length() > 0 && maxCount-- != 0)\n");
 	else
-		sourcefileBody_ += fmt::format("\t\t\twhile(stream.length() > 0)\n");
+		sourcefileBody_ += fmt::format("\t\twhile(stream.Length() > 0)\n");
+
+	sourcefileBody_ += fmt::format("\t\t{{\n");
+
+	sourcefileBody_ += fmt::format("\t\t\tlet _t_utype:number = 0;\n");
+
+	if (pEntityScriptDefModule->isComponentModule())
+	{
+		sourcefileBody_ += fmt::format("\t\t\tlet _t_child_utype:number = propUtype;\n\n");
+		sourcefileBody_ += fmt::format("\t\t\tif(_t_child_utype == 0)\n");
+	}
+	else
+	{
+		sourcefileBody_ += fmt::format("\t\t\tlet _t_child_utype:number = 0;\n\n");
+	}
 
 	sourcefileBody_ += fmt::format("\t\t\t{{\n");
-
-	sourcefileBody_ += fmt::format("\t\t\t\tUInt16 _t_utype = 0;\n");
-
-	if (pEntityScriptDefModule->isComponentModule())
-	{
-		sourcefileBody_ += fmt::format("\t\t\t\tUInt16 _t_child_utype = propUtype;\n\n");
-		sourcefileBody_ += fmt::format("\t\t\t\tif(_t_child_utype == 0)\n");
-	}
-	else
-	{
-		sourcefileBody_ += fmt::format("\t\t\t\tUInt16 _t_child_utype = 0;\n\n");
-	}
-
+	sourcefileBody_ += fmt::format("\t\t\t\tif(sm.usePropertyDescrAlias){{\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t\t_t_utype = stream.ReadUint8();\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t\t_t_child_utype = stream.ReadUint8();\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t}}\n");
+	sourcefileBody_ += fmt::format("\t\t\t\telse\n");
 	sourcefileBody_ += fmt::format("\t\t\t\t{{\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\tif(sm.usePropertyDescrAlias)\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t{{\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t\t_t_utype = stream.readUint8();\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t\t_t_child_utype = stream.readUint8();\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\telse\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t{{\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t\t_t_utype = stream.readUint16();\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t\t_t_child_utype = stream.readUint16();\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t}}\n\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t\t_t_utype = stream.ReadUint16();\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t\t_t_child_utype = stream.ReadUint16();\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t}}\n");
+	sourcefileBody_ += fmt::format("\t\t\t}}\n\n");
 
-	sourcefileBody_ += fmt::format("\t\t\t\tProperty prop = null;\n\n");
+	sourcefileBody_ += fmt::format("\t\t\tlet prop:Property | null = null;\n\n");
 
 	if (pEntityScriptDefModule->isComponentModule())
 	{
-		sourcefileBody_ += fmt::format("\t\t\t\tprop = pdatas[_t_child_utype];\n\n");
+		sourcefileBody_ += fmt::format("\t\t\tprop = pdatas[_t_child_utype];\n\n");
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t\t\t\tif(_t_utype == 0)\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\tprop = pdatas[_t_child_utype];\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t}}\n");
-		sourcefileBody_ += fmt::format("\t\t\t\telse\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\tif(_t_utype == 0){{\n");
+		sourcefileBody_ += fmt::format("\t\t\t\tprop = pdatas[_t_child_utype];\n");
+		sourcefileBody_ += fmt::format("\t\t\t}}\n");
+		sourcefileBody_ += fmt::format("\t\t\telse\n");
+		sourcefileBody_ += fmt::format("\t\t\t{{\n");
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\tProperty pComponentPropertyDescription = pdatas[_t_utype];\n");
+		sourcefileBody_ += fmt::format("\t\t\t\tlet pComponentPropertyDescription:Property = pdatas[_t_utype];\n");
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\tswitch(pComponentPropertyDescription.properUtype)\n\t\t\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\t\tswitch(pComponentPropertyDescription.properUtype)\n\t\t\t\t\t{{\n");
 
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP clientPropertys = pEntityScriptDefModule->getClientPropertyDescriptions();
 		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator propIter = clientPropertys.begin();
@@ -2494,19 +3358,19 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 				continue;
 
 
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\t\t{}.onUpdatePropertys(_t_child_utype, stream, -1);\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tbreak;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+			sourcefileBody_ += fmt::format("\t\t\t\t\t\tthis.{}!.onUpdatePropertys(_t_child_utype, stream, -1);\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\tdefault:\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tbreak;\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\treturn;\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\tdefault:\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
 		sourcefileBody_ += fmt::format("\t\t\t\t}}\n\n");
+		sourcefileBody_ += fmt::format("\t\t\t\treturn;\n");
+		sourcefileBody_ += fmt::format("\t\t\t}}\n\n");
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\t\tswitch(prop.properUtype)\n\t\t\t\t{{\n");
+	sourcefileBody_ += fmt::format("\t\t\tswitch(prop!.properUtype){{\n");
 
 	ScriptDefModule::PROPERTYDESCRIPTION_MAP clientPropertys = pEntityScriptDefModule->getClientPropertyDescriptions();
 
@@ -2524,9 +3388,9 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 		if (pPropertyDescription->getDataType()->type() == DATA_TYPE_ENTITY_COMPONENT)
 		{
-			sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\t{}.createFromStream(stream);\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
+			sourcefileBody_ += fmt::format("\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+			sourcefileBody_ += fmt::format("\t\t\t\t\tthis.{}!.createFromStream(stream);\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
 			continue;
 		}
 
@@ -2545,22 +3409,28 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 		{
 			if (std::string("spaceID") == pPropertyDescription->getName())
 			{
-				sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-				sourcefileBody_ += fmt::format("\t\t\t\t\t\tstream.readUint32();\n");
-				sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
+				sourcefileBody_ += fmt::format("\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+				sourcefileBody_ += fmt::format("\t\t\t\t\tstream.ReadUint32();\n");
+				sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
 				continue;
 			}
 			else
 			{
-				std::string findstr = fmt::format(" {} = ", pPropertyDescription->getName());
+				/*std::string findstr = fmt::format(" {} = ", pPropertyDescription->getName());
 				std::string::size_type fpos2 = sourcefileBody_.find(findstr);
 				std::string::size_type fpos1 = sourcefileBody_.rfind(" ", fpos2 - 1);
-				typestr.assign(sourcefileBody_.begin() + fpos1 + 1, sourcefileBody_.begin() + fpos2);
+				typestr.assign(sourcefileBody_.begin() + fpos1 + 1, sourcefileBody_.begin() + fpos2);*/
+
+				std::string findstr = fmt::format(" {}:", pPropertyDescription->getName());
+				std::string::size_type fpos2 = sourcefileBody_.find(findstr);
+				std::string::size_type fpos1 = sourcefileBody_.find(" ", fpos2 + 1);
+				// 这里获取类型，要处理
+				typestr.assign(sourcefileBody_.begin() + fpos2 + findstr.length() , sourcefileBody_.begin() + fpos1);
 			}
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t{} oldval_{} = {};\n", typestr, pPropertyDescription->getName(), pPropertyDescription->getName());
+		sourcefileBody_ += fmt::format("\t\t\t\tcase {}:\n", pPropertyDescription->getUType());
+		sourcefileBody_ += fmt::format("\t\t\t\t\tlet oldval_{}:{} = this.{};\n",  pPropertyDescription->getName(), typestr, pPropertyDescription->getName());
 
 		std::string readName = datatype2nativetype(pPropertyDescription->getDataType()->getName());
 		if (readName.size() > 0)
@@ -2575,52 +3445,58 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 
 		if (pPropertyDescription->getDataType()->type() == DATA_TYPE_FIXEDDICT)
 		{
-			readName = fmt::format("((DATATYPE_{})EntityDef.id2datatypes[{}]).createFromStreamEx(stream)", 
-				pPropertyDescription->getDataType()->aliasName(), pPropertyDescription->getDataType()->id());
+			readName = fmt::format("(EntityDef.id2datatypes[{}] as DATATYPE_{}).createFromStreamEx(stream)", 
+				 pPropertyDescription->getDataType()->id(), pPropertyDescription->getDataType()->aliasName());
 		}
 		else if (pPropertyDescription->getDataType()->type() == DATA_TYPE_FIXEDARRAY)
 		{
 			if (strlen(pPropertyDescription->getDataType()->aliasName()) > 0)
 			{
-				readName = fmt::format("((DATATYPE_{})EntityDef.id2datatypes[{}]).createFromStreamEx(stream)", 
-					pPropertyDescription->getDataType()->aliasName(), pPropertyDescription->getDataType()->id());
+				readName = fmt::format("(EntityDef.id2datatypes[{}] as DATATYPE_{}).createFromStreamEx(stream)", 
+					pPropertyDescription->getDataType()->id(), pPropertyDescription->getDataType()->aliasName());
 			}
 			else
 			{
-				readName = fmt::format("((DATATYPE_AnonymousArray_{})EntityDef.id2datatypes[{}]).createFromStreamEx(stream)", 
-					pPropertyDescription->getDataType()->id(), pPropertyDescription->getDataType()->id());
+				readName = fmt::format("(EntityDef.id2datatypes[{}] as DATATYPE_AnonymousArray_{}).createFromStreamEx(stream)", 
+					pPropertyDescription->getDataType()->id(),pPropertyDescription->getDataType()->id());
 			}
 		}
 		else
 		{
-			readName = fmt::format("stream.read{}()", readName);
+			if (readName == "Uint64" || readName == "Int64") {
+				readName = fmt::format("stream.Read{}().toBigInt()", readName);
+			}
+			else {
+				readName = fmt::format("stream.Read{}()", readName);
+			}
+			
 		}
 
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t{} = {};\n", pPropertyDescription->getName(), readName);
+		sourcefileBody_ += fmt::format("\t\t\t\t\tthis.{} = {};\n", pPropertyDescription->getName(), readName);
 
 		std::string name = pPropertyDescription->getName();
 		name[0] = std::toupper(name[0]);
-		sourcefileBody_ += fmt::format("\n\t\t\t\t\t\tif(prop.isBase())\n\t\t\t\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tif({}inited)\n", ownstr);
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\t\ton{}Changed(oldval_{});\n\t\t\t\t\t\t}}\n", name, pPropertyDescription->getName());
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\telse\n\t\t\t\t\t\t{{\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tif({}inWorld)\n", ownstr);
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\t\ton{}Changed(oldval_{});\n", name, pPropertyDescription->getName());
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\t}}\n\n");
-		sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
+		sourcefileBody_ += fmt::format("\n\t\t\t\t\tif(prop!.isBase())\n\t\t\t\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\t\tif(this.{}inited)\n", ownstr);
+		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tthis.on{}Changed(oldval_{});\n\t\t\t\t\t\t}}\n", name, pPropertyDescription->getName());
+		sourcefileBody_ += fmt::format("\t\t\t\t\telse\n\t\t\t\t\t\t{{\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\t\tif(this.{}inWorld)\n", ownstr);
+		sourcefileBody_ += fmt::format("\t\t\t\t\t\t\tthis.on{}Changed(oldval_{});\n", name, pPropertyDescription->getName());
+		sourcefileBody_ += fmt::format("\t\t\t\t\t}}\n\n");
+		sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
 	}
 
-	sourcefileBody_ += fmt::format("\t\t\t\t\tdefault:\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t\t\tbreak;\n");
-	sourcefileBody_ += fmt::format("\t\t\t\t}};\n");
+	sourcefileBody_ += fmt::format("\t\t\t\tdefault:\n");
+	sourcefileBody_ += fmt::format("\t\t\t\t\tbreak;\n");
+	sourcefileBody_ += fmt::format("\t\t\t}};\n");
 
-	sourcefileBody_ += fmt::format("\t\t\t}}\n");
-	sourcefileBody_ += "\t\t}\n";
+	sourcefileBody_ += fmt::format("\t\t}}\n");
+	sourcefileBody_ += "\t}\n";
 
 	// 处理属性callPropertysSetMethods
-	sourcefileBody_ += fmt::format("\n\t\tpublic override void callPropertysSetMethods()\n\t\t{{\n");
-	sourcefileBody_ += fmt::format("\t\t\tScriptModule sm = EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
-	sourcefileBody_ += fmt::format("\t\t\tDictionary<UInt16, Property> pdatas = sm.idpropertys;\n\n");
+	sourcefileBody_ += fmt::format("\n\tpublic override callPropertysSetMethods(){{\n");
+	sourcefileBody_ += fmt::format("\t\tlet sm:ScriptModule = EntityDef.moduledefs[\"{}\"];\n", pEntityScriptDefModule->getName());
+	sourcefileBody_ += fmt::format("\t\tlet pdatas = sm.idpropertys;\n\n");
 
 	propIter = clientPropertys.begin();
 	for (; propIter != clientPropertys.end(); ++propIter)
@@ -2643,38 +3519,39 @@ bool ClientSDKTypeScript::writeEntityProcessMessagesMethod(ScriptDefModule* pEnt
 		}
 		else
 		{
-			std::string findstr = fmt::format(" {} = ", pPropertyDescription->getName());
+			std::string findstr = fmt::format(" {}:", pPropertyDescription->getName());
 			std::string::size_type fpos2 = sourcefileBody_.find(findstr);
-			std::string::size_type fpos1 = sourcefileBody_.rfind(" ", fpos2 - 1);
-			typestr.assign(sourcefileBody_.begin() + fpos1 + 1, sourcefileBody_.begin() + fpos2);
+			std::string::size_type fpos1 = sourcefileBody_.find(" ", fpos2 + 1);
+			// 这里获取类型，要处理
+			typestr.assign(sourcefileBody_.begin() + fpos2 + findstr.length(), sourcefileBody_.begin() + fpos1);
 		}
 
 		if (pPropertyDescription->getDataType()->type() == DATA_TYPE_ENTITY_COMPONENT)
 		{
-			sourcefileBody_ += fmt::format("\t\t\t{}.callPropertysSetMethods();\n\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tthis.{}!.callPropertysSetMethods();\n\n", pPropertyDescription->getName());
 		}
 		else
 		{
-			sourcefileBody_ += fmt::format("\t\t\t{} oldval_{} = {};\n", typestr, pPropertyDescription->getName(), pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\tlet oldval_{}:{} = this.{};\n", pPropertyDescription->getName(), typestr, pPropertyDescription->getName());
 
 			std::string name = pPropertyDescription->getName();
 			name[0] = std::toupper(name[0]);
 
-			sourcefileBody_ += fmt::format("\t\t\tProperty prop_{} = pdatas[{}];\n", pPropertyDescription->getName(), (pEntityScriptDefModule->usePropertyDescrAlias() ?
+			sourcefileBody_ += fmt::format("\t\tlet prop_{}:Property = pdatas[{}];\n", pPropertyDescription->getName(), (pEntityScriptDefModule->usePropertyDescrAlias() ?
 				pPropertyDescription->aliasID() : pPropertyDescription->getUType()));
 
-			sourcefileBody_ += fmt::format("\t\t\tif(prop_{}.isBase())\n\t\t\t{{\n", pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\tif({}inited && !{}inWorld)\n", ownstr, ownstr);
-			sourcefileBody_ += fmt::format("\t\t\t\t\ton{}Changed(oldval_{});\n", name, pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t}}\n\t\t\telse\n\t\t\t{{\n");
-			sourcefileBody_ += fmt::format("\t\t\t\tif({}inWorld)\n\t\t\t\t{{\n", ownstr);
-			sourcefileBody_ += fmt::format("\t\t\t\t\tif(prop_{}.isOwnerOnly() && !{}isPlayer())\n\t\t\t\t\t{{\n\t\t\t\t\t}}\n\t\t\t\t\telse\n\t\t\t\t\t{{\n", pPropertyDescription->getName(), ownstr);
-			sourcefileBody_ += fmt::format("\t\t\t\t\t\ton{}Changed(oldval_{});\n\t\t\t\t\t}}\n", name, pPropertyDescription->getName());
-			sourcefileBody_ += fmt::format("\t\t\t\t}}\n\t\t\t}}\n\n");
+			sourcefileBody_ += fmt::format("\t\tif(prop_{}.isBase()){{\n", pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\tif(this.{}inited && !this.{}inWorld)\n", ownstr, ownstr);
+			sourcefileBody_ += fmt::format("\t\t\t\tthis.on{}Changed(oldval_{});\n", name, pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t}}\n\t\telse\n\t\t{{\n");
+			sourcefileBody_ += fmt::format("\t\t\tif(this.{}inWorld)\n\t\t\t{{\n", ownstr);
+			sourcefileBody_ += fmt::format("\t\t\t\tif(prop_{}.isOwnerOnly() && !this.{}IsPlayer())\n\t\t\t\t{{\n\t\t\t\t}}\n\t\t\t\telse\n\t\t\t\t{{\n", pPropertyDescription->getName(), ownstr);
+			sourcefileBody_ += fmt::format("\t\t\t\t\tthis.on{}Changed(oldval_{});\n\t\t\t\t}}\n", name, pPropertyDescription->getName());
+			sourcefileBody_ += fmt::format("\t\t\t}}\n\t\t}}\n\n");
 		}
 	}
 
-	sourcefileBody_ += "\t\t}\n";
+	sourcefileBody_ += "\t}\n";
 
 	return true;
 }
@@ -2685,7 +3562,7 @@ bool ClientSDKTypeScript::writeEntityPropertyComponent(ScriptDefModule* pEntityS
 {
 	EntityComponentType * pEntityComponentType = (EntityComponentType*)pPropertyDescription->getDataType();
 	
-	sourcefileBody_ += fmt::format("\tpublic {}{} {} = null;//111111\n", pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix, pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:{}{} | null  = null;\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName(), moduleSuffix,
 		pEntityComponentType->pScriptDefModule()->getName());
 
 	return true;
@@ -2695,12 +3572,12 @@ bool ClientSDKTypeScript::writeEntityPropertyComponent(ScriptDefModule* pEntityS
 bool ClientSDKTypeScript::writeEntityProperty_INT8(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic SByte {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(SByte oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2708,12 +3585,12 @@ bool ClientSDKTypeScript::writeEntityProperty_INT8(ScriptDefModule* pEntityScrip
 bool ClientSDKTypeScript::writeEntityProperty_INT16(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic Int16 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Int16 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2721,12 +3598,12 @@ bool ClientSDKTypeScript::writeEntityProperty_INT16(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_INT32(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic Int32 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Int32 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2734,12 +3611,12 @@ bool ClientSDKTypeScript::writeEntityProperty_INT32(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_INT64(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic Int64 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:bigint  = {}n;\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Int64 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:bigint){{}}\n", name);
 	return true;
 }
 
@@ -2747,12 +3624,12 @@ bool ClientSDKTypeScript::writeEntityProperty_INT64(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_UINT8(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic Byte {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Byte oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2760,12 +3637,12 @@ bool ClientSDKTypeScript::writeEntityProperty_UINT8(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_UINT16(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic UInt16 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(UInt16 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2773,12 +3650,12 @@ bool ClientSDKTypeScript::writeEntityProperty_UINT16(ScriptDefModule* pEntityScr
 bool ClientSDKTypeScript::writeEntityProperty_UINT32(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic UInt32 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(UInt32 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2786,12 +3663,12 @@ bool ClientSDKTypeScript::writeEntityProperty_UINT32(ScriptDefModule* pEntityScr
 bool ClientSDKTypeScript::writeEntityProperty_UINT64(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic UInt64 {} = {};\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:bigint  = {}n;\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(UInt64 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:bigint){{}}\n", name);
 	return true;
 }
 
@@ -2799,12 +3676,12 @@ bool ClientSDKTypeScript::writeEntityProperty_UINT64(ScriptDefModule* pEntityScr
 bool ClientSDKTypeScript::writeEntityProperty_FLOAT(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic float {} = {}f;\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(float oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2812,12 +3689,12 @@ bool ClientSDKTypeScript::writeEntityProperty_FLOAT(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_DOUBLE(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic double {} = {}d;\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:number  = {};\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "0"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(double oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:number){{}}\n", name);
 	return true;
 }
 
@@ -2825,12 +3702,12 @@ bool ClientSDKTypeScript::writeEntityProperty_DOUBLE(ScriptDefModule* pEntityScr
 bool ClientSDKTypeScript::writeEntityProperty_STRING(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic string {} = \"{}\";\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:string = \"{}\";\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : ""));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(string oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:string){{}}\n", name);
 	return true;
 }
 
@@ -2838,12 +3715,12 @@ bool ClientSDKTypeScript::writeEntityProperty_STRING(ScriptDefModule* pEntityScr
 bool ClientSDKTypeScript::writeEntityProperty_UNICODE(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic string {} = \"{}\";\n", pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:string = \"{}\";\n", pPropertyDescription->getName(),
 		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : ""));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(string oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:string){{}}\n", name);
 	return true;
 }
 
@@ -2883,12 +3760,12 @@ bool ClientSDKTypeScript::writeEntityProperty_PY_LIST(ScriptDefModule* pEntitySc
 bool ClientSDKTypeScript::writeEntityProperty_BLOB(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic byte[] {} = {};\n", pPropertyDescription->getName(),
-		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new byte[0]"));
+	sourcefileBody_ += fmt::format("\t\tpublic {}:Uint8Array = {};\n", pPropertyDescription->getName(),
+		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Uint8Array(0)"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(byte[] oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:Uint8Array) {{}}\n", name);
 	return true;
 }
 
@@ -2908,17 +3785,17 @@ bool ClientSDKTypeScript::writeEntityProperty_ARRAY(ScriptDefModule* pEntityScri
 
 		std::string name = pPropertyDescription->getName();
 		name[0] = std::toupper(name[0]);
-		sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed({} oldValue) {{}}\n", name, values[1]);
+		sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:{}) {{}}\n", name, values[1]);
 		return ret;
 	}
 	else
 	{
-		sourcefileBody_ += fmt::format("\t\tpublic {} {} = new {}();\n", pPropertyDescription->getDataTypeName(), pPropertyDescription->getName(),
+		sourcefileBody_ += fmt::format("\tpublic {}:{}  = new {}();\n", pPropertyDescription->getName(), pPropertyDescription->getDataTypeName(),
 			pPropertyDescription->getDataTypeName());
 
 		std::string name = pPropertyDescription->getName();
 		name[0] = std::toupper(name[0]);
-		sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed({} oldValue) {{}}\n", name, pPropertyDescription->getDataTypeName());
+		sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:{}) {{}}\n", name, pPropertyDescription->getDataTypeName());
 	}
 
 	return true;
@@ -2928,12 +3805,12 @@ bool ClientSDKTypeScript::writeEntityProperty_ARRAY(ScriptDefModule* pEntityScri
 bool ClientSDKTypeScript::writeEntityProperty_FIXED_DICT(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic {} {} = new {}();\n", pPropertyDescription->getDataTypeName(), pPropertyDescription->getName(),
+	sourcefileBody_ += fmt::format("\tpublic {}:{} = new {}();\n", pPropertyDescription->getName(), pPropertyDescription->getDataTypeName(),
 		pPropertyDescription->getDataTypeName());
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed({} oldValue) {{}}\n", name, pPropertyDescription->getDataTypeName());
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:{}) {{}}\n", name, pPropertyDescription->getDataTypeName());
 	return true;
 }
 
@@ -2949,12 +3826,12 @@ bool ClientSDKTypeScript::writeEntityProperty_VECTOR2(ScriptDefModule* pEntitySc
 	name[0] = std::toupper(name[0]);
 	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector2Int oldValue) {{}}\n", name);
 #else
-	sourcefileBody_ += fmt::format("\t\tpublic Vector2 {} = {};\n", pPropertyDescription->getName(),
-		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector2(0f, 0f)"));
+	sourcefileBody_ += fmt::format("\tpublic {}:Vector2 = {};\n", pPropertyDescription->getName(),
+		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector2(0, 0)"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector2 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:Vector2) {{}}\n", name);
 #endif
 
 	return true;
@@ -2972,12 +3849,12 @@ bool ClientSDKTypeScript::writeEntityProperty_VECTOR3(ScriptDefModule* pEntitySc
 	name[0] = std::toupper(name[0]);
 	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector3Int oldValue) {{}}\n", name);
 #else
-	sourcefileBody_ += fmt::format("\t\tpublic Vector3 {} = {};\n", pPropertyDescription->getName(),
-		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector3(0f, 0f, 0f)"));
+	sourcefileBody_ += fmt::format("\tpublic {}:Vector3 = {};\n", pPropertyDescription->getName(),
+		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector3(0, 0, 0)"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector3 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:Vector3) {{}}\n", name);
 #endif
 
 	return true;
@@ -2995,12 +3872,12 @@ bool ClientSDKTypeScript::writeEntityProperty_VECTOR4(ScriptDefModule* pEntitySc
 	name[0] = std::toupper(name[0]);
 	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector4Int oldValue) {{}}\n", name);
 #else
-	sourcefileBody_ += fmt::format("\t\tpublic Vector4 {} = {};\n", pPropertyDescription->getName(),
-		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector4(0f, 0f, 0f, 0f)"));
+	sourcefileBody_ += fmt::format("\tpublic {}:Vector4 = {};\n", pPropertyDescription->getName(),
+		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Vector4(0, 0, 0, 0)"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(Vector4 oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:Vector4) {{}}\n", name);
 #endif
 
 	return true;
@@ -3010,12 +3887,12 @@ bool ClientSDKTypeScript::writeEntityProperty_VECTOR4(ScriptDefModule* pEntitySc
 bool ClientSDKTypeScript::writeEntityProperty_ENTITYCALL(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, PropertyDescription* pPropertyDescription)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic byte[] {} = {};\n", pPropertyDescription->getName(),
-		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new byte[0]"));
+	sourcefileBody_ += fmt::format("\tpublic {}:Uint8Array = {};\n", pPropertyDescription->getName(),
+		(strlen(pPropertyDescription->getDefaultValStr()) > 0 ? pPropertyDescription->getDefaultValStr() : "new Uint8Array(0)"));
 
 	std::string name = pPropertyDescription->getName();
 	name[0] = std::toupper(name[0]);
-	sourcefileBody_ += fmt::format("\t\tpublic virtual void on{}Changed(byte[] oldValue) {{}}\n", name);
+	sourcefileBody_ += fmt::format("\tpublic on{}Changed(oldValue:Uint8Array) {{}}\n", name);
 	return true;
 }
 
@@ -3023,7 +3900,7 @@ bool ClientSDKTypeScript::writeEntityProperty_ENTITYCALL(ScriptDefModule* pEntit
 bool ClientSDKTypeScript::writeEntityMethod(ScriptDefModule* pEntityScriptDefModule,
 	ScriptDefModule* pCurrScriptDefModule, MethodDescription* pMethodDescription, const char* fillString)
 {
-	sourcefileBody_ += fmt::format("\t\tpublic abstract void {}({}); \n", pMethodDescription->getName(), fillString);
+	sourcefileBody_ += fmt::format("\tpublic abstract {}({}); \n", pMethodDescription->getName(), fillString);
 	return true;
 }
 

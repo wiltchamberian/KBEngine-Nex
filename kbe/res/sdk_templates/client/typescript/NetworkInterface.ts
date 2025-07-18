@@ -1,7 +1,7 @@
 
 import KBEDebug from "./KBEDebug";
 import KBEEvent from "./Event";
-import MemoryStream from "./MemoryStream";
+import { MemoryStream } from "./KBEngine";
 import Messages, { Message } from "./Messages";
 
 export default class NetworkInterface

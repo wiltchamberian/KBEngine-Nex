@@ -1,6 +1,5 @@
 
 import KBEDebug from "./KBEDebug";
-//import Account from "./Account";  // note：会导致循环引用，因此提供RegisterScript来注册脚本。
 
 // 把所有的entity脚本都注册到此处
 var EntityScripts = {};
@@ -21,3 +20,4 @@ export function GetEntityScript(name: string)
 
     return script;
 }
+

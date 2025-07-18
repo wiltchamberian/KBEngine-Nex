@@ -1,5 +1,3 @@
-// 由 KBEngine C# SDK 结构迁移
-// 属性描述结构
 
 export enum EntityDataFlags
 {

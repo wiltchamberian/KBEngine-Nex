@@ -19,6 +19,13 @@ public:
 		return "typescript";
 	}
 
+	virtual bool create(const std::string& path);
+	virtual bool writeTypes();
+	virtual bool saveFile(bool overwrite = true);
+
+	virtual bool writeEntityCall(ScriptDefModule* pScriptDefModule);
+	virtual bool writeEntityMethods(ScriptDefModule* pEntityScriptDefModule,ScriptDefModule* pCurrScriptDefModule);
+
 	virtual void onCreateEntityModuleFileName(const std::string& moduleName);
 	virtual void onCreateTypeFileName();
 	virtual void onCreateServerErrorDescrsModuleFileName();
