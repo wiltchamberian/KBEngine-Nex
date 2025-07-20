@@ -2128,7 +2128,7 @@ bool ClientSDKTypeScript::writeCustomDataType(const DataType* pDataType)
 //-------------------------------------------------------------------------------------
 bool ClientSDKTypeScript::writeEntityDefsModuleInitScript_ScriptModule(ScriptDefModule* pScriptDefModule)
 {
-	sourcefileBody_ += fmt::format("\t\t\let p{}Module = new ScriptModule(\"{}\");\n", pScriptDefModule->getName(), pScriptDefModule->getName());
+	sourcefileBody_ += fmt::format("\t\tlet p{}Module = new ScriptModule(\"{}\");\n", pScriptDefModule->getName(), pScriptDefModule->getName());
 	sourcefileBody_ += fmt::format("\t\tEntityDef.moduledefs[\"{}\"] = p{}Module;\n", pScriptDefModule->getName(), pScriptDefModule->getName());
 	sourcefileBody_ += fmt::format("\t\tEntityDef.idmoduledefs[{}] = p{}Module;\n\n", pScriptDefModule->getUType(), pScriptDefModule->getName());
 	return true;
@@ -2222,7 +2222,7 @@ bool ClientSDKTypeScript::writeEntityDefsModuleInitScript_PropertyDescr(ScriptDe
 	if (typeID == 0 || isFixedType)
 		typeID = pDescr->getDataType()->id();
 
-	sourcefileBody_ += fmt::format("\t\t\let p{}_{} = new Property();\n", pScriptDefModule->getName(), pDescr->getName());
+	sourcefileBody_ += fmt::format("\t\tlet p{}_{} = new Property();\n", pScriptDefModule->getName(), pDescr->getName());
 	sourcefileBody_ += fmt::format("\t\tp{}_{}.name = \"{}\";\n", pScriptDefModule->getName(), pDescr->getName(), pDescr->getName());
 	sourcefileBody_ += fmt::format("\t\tp{}_{}.properUtype = {};\n", pScriptDefModule->getName(), pDescr->getName(), pDescr->getUType());
 	sourcefileBody_ += fmt::format("\t\tp{}_{}.properFlags = {};\n", pScriptDefModule->getName(), pDescr->getName(), pDescr->getFlags());
