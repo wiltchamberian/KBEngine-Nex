@@ -512,7 +512,10 @@ export class KBEngineApp {
     }
 
     Client_onUpdateData_xyz_optimized(stream: MemoryStream) {
-        // 这个消息是为了优化xyz的更新，减少网络传输
+        let eid = this.GetViewEntityIDFromStream(stream);
+        let xz = stream.ReadPackXZ();
+        let y = stream.ReadPackY();
+        this.UpdateVolatileData(eid, xz[0], y, xz[1], KBE_FLT_MAX, KBE_FLT_MAX, KBE_FLT_MAX, 0, true);
     }
 
     private OnImportClientMessages(stream: MemoryStream): void {
