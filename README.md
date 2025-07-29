@@ -57,6 +57,7 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 
 	Unity		: https://github.com/KBEngineLab/demo_kbengine_unity3d_default
 	UE5		: https://github.com/KBEngineLab/demo_kbengine_ue5_default
+	CocosCreator	: https://github.com/KBEngineLab/demo_kbengine_cocos_creator_default
 	UE4		: https://github.com/kbengine/kbengine_ue4_demo
 	
 <!-- Cocos2d_js	: https://github.com/kbengine/kbengine_cocos2d_js_demo -->
