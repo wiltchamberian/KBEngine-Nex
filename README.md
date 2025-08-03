@@ -16,7 +16,7 @@
 
 [![][qq1-shield]][qq1-link]
 
-[![][build-status-shield]][build-status-link] [![][release-shield]][release-link] [![][dockerhub-shield]][dockerhub-link] [![][last-commit-shield]][last-commit-shield-link] [![][github-issues-shield]][github-issues-shield-link] [![][github-stars-shield]][github-stars-link]
+[![][build-status-shield]][build-status-link] [![][release-shield]][release-link] [![][dockerhub-shield]][dockerhub-link] [![][last-commit-shield]][last-commit-shield-link] [![][github-issues-shield]][github-issues-shield-link] [![][github-stars-shield]][github-stars-link] [![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/27963-kbenginex.svg)](https://plugins.jetbrains.com/plugin/27963-kbenginex)
 
 </div>
 
@@ -68,9 +68,12 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 ## Pycharm 插件
 
 **Pycharm插件已发布，支持 2024.2 - 2025.\***
+
+[![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/27963-kbenginex.svg)](https://plugins.jetbrains.com/plugin/27963-kbenginex)
+
 [点击查看插件使用文档](https://www.kbelab.com/kbex/)
 
-<iframe width="384px" frameborder="0" allowfullscreen height="319px" src="https://plugins.jetbrains.com/embeddable/card/27963"></iframe>
+<!-- <iframe width="384px" frameborder="0" allowfullscreen height="319px" src="https://plugins.jetbrains.com/embeddable/card/27963"></iframe> -->
 
 [build-status-shield]: https://ci.appveyor.com/api/projects/status/aij7ox4twu53v3v0/branch/master?svg=true
 [build-status-link]: https://ci.appveyor.com/project/KBEngineLab/kbengine-nex/branch/master
