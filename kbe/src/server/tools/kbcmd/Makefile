@@ -6,6 +6,7 @@ SRCS =					\
 	client_sdk_ue5		\
 	client_sdk_typescript		\
 	client_sdk_plugin		\
+	client_sdk_csharp		\
 	server_assets		\
 	entity_component	\
 	kbcmd				\

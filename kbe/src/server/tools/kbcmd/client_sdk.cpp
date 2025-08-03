@@ -6,6 +6,7 @@
 #include "client_sdk_ue4.h"
 #include "client_sdk_ue5.h"
 #include "client_sdk_typescript.h"
+#include "client_sdk_csharp.h"
 #include "client_sdk_plugin.h"
 #include "entitydef/entitydef.h"
 #include "entitydef/scriptdef_module.h"
@@ -71,6 +72,10 @@ ClientSDK* ClientSDK::createClientSDK(const std::string& type)
 	else if (lowerType == "typescript")
 	{
 		return new ClientSDKTypeScript();
+	}
+	else if (lowerType == "csharp")
+	{
+		return new ClientSDKCSharp();
 	}
 
 	return NULL;
