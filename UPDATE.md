@@ -1,8 +1,14 @@
 
 # 更新日志
 
+## v2.6.3（未发布）
+- [feat] 系统回调支持asyncio #1
+- [feat] 新增 ts sdk  #6
+- [feat] 添加原生C# SDK，支持unity和GODOT #15 #6
+- [fix] 添加mysqlclient缺失的2个dll
 
-## v2.6.1
+
+## v2.6.2
 
 - [feat] 添加dockerfile
 - [feat] python 3.7.x升级 -> 3.13.5 #2
