@@ -296,7 +296,7 @@ export class KBEngineApp {
             this.lastTickTime = now;
         }
 
-        this.UpdatePlayerToServer();
+        // this.UpdatePlayerToServer();
     }
 
     Reset(): void {
