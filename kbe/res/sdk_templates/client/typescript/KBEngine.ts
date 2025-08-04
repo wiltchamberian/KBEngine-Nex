@@ -1340,7 +1340,7 @@ export class KBEngineApp {
             let pos = isOptimized ? new Vector3(x + this.entityServerPos.x, y + this.entityServerPos.y, z + this.entityServerPos.z) : new Vector3(x, y, z);
             entity.position = pos;
             done = true;
-            entity.onPositionChanged(oldPos);
+            entity.onSmoothPositionChanged(oldPos);
             // KBEEvent.Fire("updatePosition", entity);
         }
 
@@ -1385,7 +1385,7 @@ export class KBEngineApp {
             entity.position.x = x;
             entity.position.y = y;
             entity.position.z = z;
-            entity.onPositionChanged(oldPos);
+            entity.onSmoothPositionChanged(oldPos);
             entity.OnUpdateVolatileData();
         }
     }
@@ -1402,7 +1402,7 @@ export class KBEngineApp {
 
             entity.position.x = x;
             entity.position.z = z;
-            entity.onPositionChanged(oldPos);
+            entity.onSmoothPositionChanged(oldPos);
             entity.OnUpdateVolatileData();
         }
     }
