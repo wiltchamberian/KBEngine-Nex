@@ -21,6 +21,15 @@
 </div>
 
 
+## Pycharm 插件
+
+**Pycharm插件已发布，支持 2024.2 - 2025.\***
+
+[![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/27963-kbenginex.svg)](https://plugins.jetbrains.com/plugin/27963-kbenginex)
+
+[点击查看插件使用文档](https://www.kbelab.com/kbex/)
+
+
 ## 什么是 KBEngine
 
 https://github.com/kbengine/kbengine
@@ -53,11 +62,37 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 - **快速开发游戏**：只需要使用Python就可以快速的进行设计游戏。 底层安全可靠，保证效率。
 
 
+## 支持的引擎
+<div class="clients" style="display: flex;justify-content: center;flex-wrap:wrap;margin: 50px 0 10px 0;">
+    <div style="margin: 20px 20px;flex-shrink: 0;">
+        <a href="https://unity.com/" target="_blank"><img src="https://raw.githubusercontent.com/KBEngineLab/KBEngineNexMaterials/938f6a964c299176995384985cde18fb88accb5c/images/third_party_logo/unity.svg" alt="Unity" height="30"></a>
+    </div>
+    <div style="margin:  20px 20px;flex-shrink: 0;">
+        <a href="https://www.unrealengine.com/zh-CN" target="_blank"><img src="https://raw.githubusercontent.com/KBEngineLab/KBEngineNexMaterials/938f6a964c299176995384985cde18fb88accb5c/images/third_party_logo/unreal-engine.svg" alt="UE5" height="30"></a>
+    </div>
+    <div style="margin:  20px 20px;flex-shrink: 0;">
+        <a href="https://www.cocos.com/" target="_blank"><img src="https://github.com/KBEngineLab/KBEngineNexMaterials/blob/main/images/third_party_logo/cocos_dark.png?raw=true" alt="Cocos" height="30"></a>
+    </div>
+</div>
+
+
+
+<div class="clients" style="display: flex;justify-content: center;flex-wrap:wrap;margin: 0px 0 30px 0;">
+    <div style="margin:  20px 20px;flex-shrink: 0;">
+        <a href="https://layaair.com" target="_blank"><img src="https://github.com/KBEngineLab/KBEngineNexMaterials/blob/main/images/third_party_logo/layaair-logo_dark.png?raw=true" alt="LayaAir" height="30"></a>
+    </div>
+    <div style="margin:  20px 20px;flex-shrink: 0;">
+        <a href="https://godotengine.org/" target="_blank"><img src="https://raw.githubusercontent.com/KBEngineLab/KBEngineNexMaterials/938f6a964c299176995384985cde18fb88accb5c/images/third_party_logo/godot-logo.svg" alt="Godot" height="30"></a>
+    </div>
+</div>
+
+
 ## Demo
 
 	Unity		: https://github.com/KBEngineLab/demo_kbengine_unity3d_default
 	UE5		: https://github.com/KBEngineLab/demo_kbengine_ue5_default
 	CocosCreator	: https://github.com/KBEngineLab/demo_kbengine_cocos_creator_default
+	Godot		: https://github.com/KBEngineLab/demo_kbengine_godot_default
 	UE4		: https://github.com/kbengine/kbengine_ue4_demo
 	
 <!-- Cocos2d_js	: https://github.com/kbengine/kbengine_cocos2d_js_demo -->
@@ -65,15 +100,7 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 
 
 
-## Pycharm 插件
 
-**Pycharm插件已发布，支持 2024.2 - 2025.\***
-
-[![JetBrains Plugins](https://img.shields.io/jetbrains/plugin/v/27963-kbenginex.svg)](https://plugins.jetbrains.com/plugin/27963-kbenginex)
-
-[点击查看插件使用文档](https://www.kbelab.com/kbex/)
-
-<!-- <iframe width="384px" frameborder="0" allowfullscreen height="319px" src="https://plugins.jetbrains.com/embeddable/card/27963"></iframe> -->
 
 [build-status-shield]: https://ci.appveyor.com/api/projects/status/aij7ox4twu53v3v0/branch/master?svg=true
 [build-status-link]: https://ci.appveyor.com/project/KBEngineLab/kbengine-nex/branch/master
