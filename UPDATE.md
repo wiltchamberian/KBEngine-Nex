@@ -5,6 +5,7 @@
 - [feat] 系统回调支持asyncio #1
 - [feat] 新增 ts sdk  #6
 - [feat] 添加原生C# SDK，支持unity和GODOT #15 #6
+- [feat] 原生C# SDK支持unity websocket #29
 - [fix] 添加mysqlclient缺失的2个dll
 
 
