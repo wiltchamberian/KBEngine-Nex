@@ -1,8 +1,8 @@
 LIB =	fmt
 
-SRCS =				\
-	format		\
-	posix
+# SRCS =				\
+# 	format		\
+# 	posix
 
 ifndef KBE_ROOT
 export KBE_ROOT := $(subst /kbe/src/lib/dependencies/$(LIB),,$(CURDIR))
