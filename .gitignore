@@ -5,6 +5,7 @@ kbe_temp_*
 .vscode
 .vs
 .idea
+build.log
 # .vscode/settings.json
 # ----[ Visual Studio ]------- #
 /kbe/src/_objs
@@ -26,6 +27,9 @@ logs/
 *.exe
 *.pdb
 *.chw
+
+/kbe/src/lib/pythonBuild/pythonBuild
+/kbe/src/lib/pythonBuild/x64
 
 # -------------[ OS generated ]------------------------ #
 .DS_Store
@@ -191,3 +195,4 @@ kbengine_demos_assets-def
 balls_server_assets
 kbengine_demos_assets
 *server_assets*
+*demo*_assets*
