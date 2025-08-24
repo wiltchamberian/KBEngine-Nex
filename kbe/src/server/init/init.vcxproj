@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -108,25 +111,29 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>call "..\python\PCbuild\build.bat"  -c Debug</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>copy /Y "..\python\PCbuild\amd64\python313_d.lib" "..\..\libs"
-copy /Y "..\python\PCbuild\amd64\python313_d.exp" "..\..\libs"
+      <Command>copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.lib" "..\..\libs"
+copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.exp" "..\..\libs"
 
-copy /Y "..\python\PCbuild\amd64\python313_d.dll" "..\..\..\bin\server"
-copy /Y "..\python\PCbuild\amd64\python313_d.ilk" "..\..\..\bin\server"
-copy /Y "..\python\PCbuild\amd64\python313_d.pdb" "..\..\..\bin\server"
+copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.dll" "..\..\..\bin\server"
+copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.ilk" "..\..\..\bin\server"
+copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.pdb" "..\..\..\bin\server"
 
-copy /Y "..\python\PCbuild\amd64\vcruntime140.dll" "..\..\..\bin\server"
-copy /Y "..\python\PCbuild\amd64\vcruntime140_1.dll" "..\..\..\bin\server"
+copy /Y "..\..\lib\python\PCbuild\amd64\vcruntime140.dll" "..\..\..\bin\server"
+copy /Y "..\..\lib\python\PCbuild\amd64\vcruntime140_1.dll" "..\..\..\bin\server"
 
-xcopy "..\python\Lib" "..\..\..\res\scripts\common\Lib" /Y /i /e
-xcopy "..\python\PCbuild\amd64" "..\..\..\res\scripts\common\DLLs" /Y /i /e
+xcopy "..\..\lib\python\Lib" "..\..\..\res\scripts\common\Lib" /Y /i /e
+xcopy "..\..\lib\python\PCbuild\amd64" "..\..\..\res\scripts\common\DLLs" /Y /i /e
 
-copy /Y "..\python\PCbuild\amd64\pyconfig.h" "..\python\Include"
+copy /Y "..\..\lib\python\PCbuild\amd64\pyconfig.h" "..\..\lib\python\Include"
 </Command>
     </PostBuildEvent>
+    <PreLinkEvent>
+      <Command>call "..\..\lib\python\PCbuild\build.bat"  -c Debug</Command>
+    </PreLinkEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
