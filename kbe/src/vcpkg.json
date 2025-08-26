@@ -3,7 +3,8 @@
   "version": "2.6.3",
   "dependencies": [
     "fmt",
-    "log4cxx"
+    "log4cxx",
+    "zlib"
   ],
   "overrides": [
     {
