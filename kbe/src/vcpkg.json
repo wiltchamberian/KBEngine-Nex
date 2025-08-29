@@ -5,7 +5,8 @@
     "fmt",
     "log4cxx",
     "zlib",
-    "hiredis"
+    "hiredis",
+    "expat"
   ],
   "overrides": [
     {
