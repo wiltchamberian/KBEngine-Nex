@@ -25,6 +25,5 @@ add_library(common STATIC ${SRCS})
 
 target_link_libraries(common PUBLIC 
 	fmt::fmt
-	jemalloc_interface
 )
 
