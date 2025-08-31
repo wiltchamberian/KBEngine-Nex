@@ -22,14 +22,10 @@ set(SRCS
 add_library(entitydef STATIC ${SRCS})
 
 
-# ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(entitydef PRIVATE KBE::Python)
-
-
 target_link_libraries(entitydef PUBLIC 
 	fmt::fmt
 	xml
+	python_interface
 )
 
 

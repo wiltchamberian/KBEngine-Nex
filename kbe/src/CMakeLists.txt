@@ -12,6 +12,11 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 
+# 关闭一些编译警告
+add_compile_options(-Wno-deprecated-declarations)
+
+
+
 if(NOT DEFINED KBE_ROOT)
     string(REGEX REPLACE "/kbe/src(/.*)?$" "" KBE_ROOT "${CMAKE_SOURCE_DIR}")
 endif()

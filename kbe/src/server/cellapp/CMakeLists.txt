@@ -87,8 +87,7 @@ target_compile_definitions(cellapp PUBLIC  LOG4CXX_STATIC)
 
 
 # ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(cellapp PRIVATE KBE::Python)
+target_link_libraries(cellapp PRIVATE python_interface)
 target_link_options(cellapp PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------

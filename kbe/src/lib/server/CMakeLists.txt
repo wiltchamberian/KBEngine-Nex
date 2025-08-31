@@ -27,12 +27,12 @@ set(SRCS
 # ---------------- 创建静态库 ----------------
 add_library(server STATIC ${SRCS})
 
-# ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(server PRIVATE KBE::Python)
 
 
-target_link_libraries(server PRIVATE fmt::fmt)
+target_link_libraries(server PRIVATE 
+	fmt::fmt
+	python_interface
+)
 target_link_libraries(server PRIVATE jwsmtp)
 
 

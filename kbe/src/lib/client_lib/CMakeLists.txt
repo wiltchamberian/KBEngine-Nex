@@ -18,11 +18,6 @@ set(SRCS
 # ---------------- 创建静态库 ----------------
 add_library(client_lib STATIC ${SRCS})
 
-
-# ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(client_lib PRIVATE KBE::Python)
-
 # ---------------- OpenSSL ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/OpenSSL.cmake)
 target_link_libraries(client_lib PRIVATE OpenSSL::SSL)
@@ -37,6 +32,7 @@ target_link_libraries(client_lib PUBLIC
     helper
     xml
     fmt::fmt
+    python_interface
 )
 
 

@@ -41,8 +41,7 @@ target_link_libraries(baseappmgr
 target_compile_definitions(baseappmgr PUBLIC  LOG4CXX_STATIC)
 
 # ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(baseappmgr PRIVATE KBE::Python)
+target_link_libraries(baseappmgr PRIVATE python_interface)
 target_link_options(baseappmgr PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------

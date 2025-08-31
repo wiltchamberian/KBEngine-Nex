@@ -11,14 +11,9 @@ set(SRCS
 # ---------------- 创建静态库 ----------------
 add_library(db_mysql STATIC ${SRCS})
 
-
-# ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(db_mysql PRIVATE KBE::Python)
-
-
 target_link_libraries(db_mysql PUBLIC 
 	fmt::fmt
+	python_interface
 )
 
 

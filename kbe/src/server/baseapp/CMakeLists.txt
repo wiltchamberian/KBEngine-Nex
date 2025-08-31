@@ -60,8 +60,7 @@ target_compile_definitions(baseapp PUBLIC  LOG4CXX_STATIC)
 
 
 # ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(baseapp PRIVATE KBE::Python)
+target_link_libraries(baseapp PRIVATE python_interface)
 target_link_options(baseapp PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------

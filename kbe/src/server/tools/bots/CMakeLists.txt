@@ -49,8 +49,7 @@ target_compile_definitions(bots PUBLIC  LOG4CXX_STATIC)
 
 
 # ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(bots PRIVATE KBE::Python)
+target_link_libraries(bots PRIVATE python_interface)
 target_link_options(bots PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------

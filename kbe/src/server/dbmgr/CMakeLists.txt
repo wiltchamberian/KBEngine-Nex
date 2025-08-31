@@ -65,8 +65,7 @@ target_link_libraries(dbmgr PRIVATE ${MYSQL_LIBS})
 target_compile_definitions(dbmgr PUBLIC  LOG4CXX_STATIC)
 
 # ---------------- Python ----------------
-include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(dbmgr PRIVATE KBE::Python)
+target_link_libraries(dbmgr PRIVATE python_interface)
 target_link_options(dbmgr PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
