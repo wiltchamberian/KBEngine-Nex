@@ -44,6 +44,7 @@ include_directories(
     ${KBE_ROOT}/kbe/src/server
     ${KBE_ROOT}/kbe/src/lib/dependencies
     ${KBE_ROOT}/kbe/src/lib/dependencies/g3dlite
+    ${KBE_ROOT}/kbe/src/lib/dependencies/fmt/include
     ${KBE_ROOT}/kbe/src/lib/dependencies/curl/include
 )
 
@@ -82,10 +83,16 @@ set_target_properties(log4cxx PROPERTIES
 
 
 
-if(NOT DISABLE_WATCHERS)
-    add_definitions(-DENABLE_WATCHERS)
-endif()
-
+# if(NOT DISABLE_WATCHERS)
+#     add_definitions(-DENABLE_WATCHERS)
+# endif()
+add_compile_definitions(
+    $<$<CONFIG:Debug>:KBE_CONFIG=\"Debug\">
+    $<$<CONFIG:Release>:KBE_CONFIG=\"Release\">
+    $<$<CONFIG:RelWithDebInfo>:KBE_CONFIG=\"RelWithDebInfo\">
+    $<$<CONFIG:MinSizeRel>:KBE_CONFIG=\"MinSizeRel\">
+    ENABLE_WATCHERS=1
+)
 
 
 # 关闭 curl 的一些不必要的组件
@@ -191,6 +198,16 @@ add_subdirectory(lib/xml)
 
 
 add_subdirectory(server/baseapp)
+add_subdirectory(server/baseappmgr)
+add_subdirectory(server/cellapp)
+add_subdirectory(server/cellappmgr)
+add_subdirectory(server/dbmgr)
+add_subdirectory(server/loginapp)
+add_subdirectory(server/machine)
+add_subdirectory(server/tools/interfaces)
+add_subdirectory(server/tools/logger)
+add_subdirectory(server/tools/kbcmd)
+add_subdirectory(server/tools/bots)
 
 
 

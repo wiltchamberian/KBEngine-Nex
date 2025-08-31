@@ -6,5 +6,8 @@ set(SRCS
 add_library(xml STATIC ${SRCS})
 
 
-target_link_libraries(xml PRIVATE fmt::fmt)
+target_link_libraries(xml PUBLIC 
+    fmt::fmt
+    tinyxml
+)
 

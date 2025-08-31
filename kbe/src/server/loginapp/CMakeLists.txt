@@ -1,0 +1,58 @@
+
+# 收集源文件
+set(SRCS
+	clientsdk_downloader.cpp
+	http_cb_handler.cpp
+	loginapp.cpp
+	loginapp_interface.cpp
+	main.cpp
+	profile.cpp
+)
+
+# 创建可执行程序
+add_executable(loginapp ${SRCS})
+
+
+# 链接依赖的库
+target_link_libraries(loginapp
+    PRIVATE
+        server
+        resmgr
+        network
+        thread
+        pyscript
+        common
+        helper
+        math
+        g3dlite
+        log4cxx
+		jwsmtp
+
+        debug ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/debug/lib/libaprutil-1.a
+        optimized ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib/libaprutil-1.a
+
+        debug ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/debug/lib/libapr-1.a
+        optimized ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib/libapr-1.a
+
+        debug ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/debug/lib/libexpat.a
+        optimized ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib/libexpat.a
+
+)
+
+target_compile_definitions(loginapp PUBLIC  LOG4CXX_STATIC)
+
+
+# ---------------- Python ----------------
+include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
+target_link_libraries(loginapp PRIVATE KBE::Python)
+target_link_options(loginapp PRIVATE -Wl,-export-dynamic)
+
+# ---------------- OpenSSL ----------------
+include(${CMAKE_SOURCE_DIR}/cmakefile/OpenSSL.cmake)
+target_link_libraries(loginapp PRIVATE OpenSSL::SSL)
+
+
+# 设置可执行文件输出目录
+set_target_properties(loginapp PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${KBE_ROOT}/kbe/bin/server"
+)

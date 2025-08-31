@@ -29,6 +29,7 @@ target_link_libraries(entitydef PRIVATE KBE::Python)
 
 target_link_libraries(entitydef PUBLIC 
 	fmt::fmt
+	xml
 )
 
 

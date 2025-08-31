@@ -14,9 +14,12 @@ add_library(db_redis STATIC ${SRCS})
 
 # ---------------- Python ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(db_redis PRIVATE KBE::Python)
+target_link_libraries(db_redis PRIVATE 
+	KBE::Python
+	hiredis::hiredis
+)
 
 
-target_link_libraries(db_redis PRIVATE fmt::fmt)
-
-
+target_link_libraries(db_redis PUBLIC 
+	fmt::fmt
+)

@@ -18,7 +18,11 @@ include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
 target_link_libraries(db_interface PRIVATE KBE::Python)
 
 
-target_link_libraries(db_interface PRIVATE fmt::fmt)
+target_link_libraries(db_interface PRIVATE 
+	fmt::fmt
+	db_redis
+	db_mysql
+)
 
 
 

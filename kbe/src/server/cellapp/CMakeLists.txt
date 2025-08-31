@@ -1,37 +1,62 @@
 
 # 收集源文件
 set(SRCS
-	archiver.cpp
-	entity.cpp
-	entity_component.cpp
-	baseapp.cpp
-	baseapp_interface.cpp
-	backuper.cpp
-	entity_messages_forward_handler.cpp
-	data_download.cpp
-	data_downloads.cpp
-	entity_autoloader.cpp
-	entity_remotemethod.cpp
+	all_clients.cpp
+	view_trigger.cpp
+	cell.cpp
+	cells.cpp
+	cellapp.cpp
+	cellapp_interface.cpp
+	clients_remote_entity_method.cpp
+	controller.cpp
+	controllers.cpp
+	client_entity.cpp
+	client_entity_method.cpp
 	forward_message_over_handler.cpp
+	entity.cpp
+	entityref.cpp
+	entity_remotemethod.cpp
+	entity_coordinate_node.cpp
+	entity_component.cpp
+	ghost_manager.cpp
+	history_event.cpp
 	initprogress_handler.cpp
-	restore_entity_handler.cpp
-	sync_entitystreamtemplate_handler.cpp
-	space.cpp
+	loadnavmesh_threadtasks.cpp
 	main.cpp
-	proxy.cpp
-	proxy_forwarder.cpp
+	space.cpp
+	spacememory.cpp
+	spacememorys.cpp
+	space_viewer.cpp
+	move_controller.cpp
+	moveto_entity_handler.cpp
+	moveto_point_handler.cpp
+	navigate_handler.cpp
 	profile.cpp
+	proximity_controller.cpp
+	coordinate_node.cpp
+	coordinate_system.cpp
+	rotator_handler.cpp
+	range_trigger.cpp
+	range_trigger_node.cpp
+	real_entity_method.cpp
+	trap_trigger.cpp
+	turn_controller.cpp
+	updatable.cpp
+	updatables.cpp
+	watch_obj_pools.cpp
+	witness.cpp
+	witnessed_timeout_handler.cpp
 )
 
 # 创建可执行程序
-add_executable(baseapp ${SRCS})
+add_executable(cellapp ${SRCS})
 
 
 
 # link_directories(${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib)
 
 # 链接依赖的库
-target_link_libraries(baseapp
+target_link_libraries(cellapp
     PRIVATE
         server
         resmgr
@@ -41,6 +66,8 @@ target_link_libraries(baseapp
         pyscript
         common
         helper
+		navigation
+		tmxparser
         math
         g3dlite
         log4cxx
@@ -56,28 +83,20 @@ target_link_libraries(baseapp
 
 )
 
-target_compile_definitions(baseapp PUBLIC  LOG4CXX_STATIC)
+target_compile_definitions(cellapp PUBLIC  LOG4CXX_STATIC)
 
 
 # ---------------- Python ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(baseapp PRIVATE KBE::Python)
-target_link_options(baseapp PRIVATE -Wl,-export-dynamic)
+target_link_libraries(cellapp PRIVATE KBE::Python)
+target_link_options(cellapp PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/OpenSSL.cmake)
-target_link_libraries(baseapp PRIVATE OpenSSL::SSL)
+target_link_libraries(cellapp PRIVATE OpenSSL::SSL)
 
-# 定义宏（可根据 Makefile 里的逻辑来迁移）
-# target_compile_definitions(baseapp
-#     PRIVATE
-#         $<$<CONFIG:Debug>:KBE_CONFIG=\"Debug\">
-#         $<$<CONFIG:Release>:KBE_CONFIG=\"Release\">
-#         $<$<CONFIG:RelWithDebInfo>:KBE_CONFIG=\"RelWithDebInfo\">
-#         $<$<CONFIG:MinSizeRel>:KBE_CONFIG=\"MinSizeRel\">
-#         ENABLE_WATCHERS=1
-# )
+
 # 设置可执行文件输出目录
-set_target_properties(baseapp PROPERTIES
+set_target_properties(cellapp PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${KBE_ROOT}/kbe/bin/server"
 )

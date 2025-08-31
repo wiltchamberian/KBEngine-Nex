@@ -31,10 +31,12 @@ target_link_libraries(client_lib PRIVATE OpenSSL::SSL)
 
 target_link_libraries(client_lib PUBLIC  log4cxx)
 target_compile_definitions(client_lib PUBLIC  LOG4CXX_STATIC)
-target_link_libraries(client_lib PRIVATE fmt::fmt)
 
 
-
-target_link_libraries(client_lib PUBLIC helper)
+target_link_libraries(client_lib PUBLIC 
+    helper
+    xml
+    fmt::fmt
+)
 
 

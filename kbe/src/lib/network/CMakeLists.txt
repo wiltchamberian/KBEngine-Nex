@@ -47,7 +47,11 @@ add_library(network STATIC ${SRCS})
 include(${CMAKE_SOURCE_DIR}/cmakefile/OpenSSL.cmake)
 target_link_libraries(network PRIVATE OpenSSL::SSL)
 
-target_link_libraries(network PRIVATE fmt::fmt)
+
 target_link_libraries(network PRIVATE libcurl)
 
 
+target_link_libraries(network PUBLIC 
+	fmt::fmt 
+	xml
+)

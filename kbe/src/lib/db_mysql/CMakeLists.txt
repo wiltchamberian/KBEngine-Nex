@@ -17,7 +17,9 @@ include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
 target_link_libraries(db_mysql PRIVATE KBE::Python)
 
 
-target_link_libraries(db_mysql PRIVATE fmt::fmt)
+target_link_libraries(db_mysql PUBLIC 
+	fmt::fmt
+)
 
 
 

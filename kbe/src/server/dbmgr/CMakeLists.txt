@@ -1,38 +1,31 @@
 
 # 收集源文件
 set(SRCS
-	archiver.cpp
-	entity.cpp
+	buffered_dbtasks.cpp
+	dbmgr.cpp
+	dbmgr_interface.cpp
+	dbtasks.cpp
 	entity_component.cpp
-	baseapp.cpp
-	baseapp_interface.cpp
-	backuper.cpp
-	entity_messages_forward_handler.cpp
-	data_download.cpp
-	data_downloads.cpp
-	entity_autoloader.cpp
-	entity_remotemethod.cpp
-	forward_message_over_handler.cpp
-	initprogress_handler.cpp
-	restore_entity_handler.cpp
-	sync_entitystreamtemplate_handler.cpp
-	space.cpp
+	interfaces_handler.cpp
 	main.cpp
-	proxy.cpp
-	proxy_forwarder.cpp
 	profile.cpp
+	sync_app_datas_handler.cpp
+	update_dblog_handler.cpp
 )
 
 # 创建可执行程序
-add_executable(baseapp ${SRCS})
+add_executable(dbmgr ${SRCS})
 
 
 
 # link_directories(${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib)
 
 # 链接依赖的库
-target_link_libraries(baseapp
+target_link_libraries(dbmgr
     PRIVATE
+		db_interface
+		db_redis
+		db_mysql
         server
         resmgr
         entitydef
@@ -55,29 +48,33 @@ target_link_libraries(baseapp
         optimized ${KBE_ROOT}/kbe/src/build/vcpkg_installed/x64-linux/lib/libexpat.a
 
 )
+include_directories(
+    ${KBE_ROOT}/kbe/src/lib/dependencies/hiredis
+)
 
-target_compile_definitions(baseapp PUBLIC  LOG4CXX_STATIC)
+# 调用 mysql_config 获取需要的 flags
+execute_process(
+	COMMAND /usr/bin/mysql_config --libs_r
+	OUTPUT_VARIABLE MYSQL_LIBS
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+# 添加到 dbmgr
+separate_arguments(MYSQL_LIBS UNIX_COMMAND "${MYSQL_LIBS}")
+target_link_libraries(dbmgr PRIVATE ${MYSQL_LIBS})
 
+target_compile_definitions(dbmgr PUBLIC  LOG4CXX_STATIC)
 
 # ---------------- Python ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/Python.cmake)
-target_link_libraries(baseapp PRIVATE KBE::Python)
-target_link_options(baseapp PRIVATE -Wl,-export-dynamic)
+target_link_libraries(dbmgr PRIVATE KBE::Python)
+target_link_options(dbmgr PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
 include(${CMAKE_SOURCE_DIR}/cmakefile/OpenSSL.cmake)
-target_link_libraries(baseapp PRIVATE OpenSSL::SSL)
+target_link_libraries(dbmgr PRIVATE OpenSSL::SSL)
 
-# 定义宏（可根据 Makefile 里的逻辑来迁移）
-# target_compile_definitions(baseapp
-#     PRIVATE
-#         $<$<CONFIG:Debug>:KBE_CONFIG=\"Debug\">
-#         $<$<CONFIG:Release>:KBE_CONFIG=\"Release\">
-#         $<$<CONFIG:RelWithDebInfo>:KBE_CONFIG=\"RelWithDebInfo\">
-#         $<$<CONFIG:MinSizeRel>:KBE_CONFIG=\"MinSizeRel\">
-#         ENABLE_WATCHERS=1
-# )
+
 # 设置可执行文件输出目录
-set_target_properties(baseapp PROPERTIES
+set_target_properties(dbmgr PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${KBE_ROOT}/kbe/bin/server"
 )
