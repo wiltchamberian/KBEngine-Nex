@@ -13,6 +13,9 @@ set "SOLUTION_FILE=%PROJECT_ROOT%kbe\src\kbengine nex.sln"
 set "LOG_FILE=%PROJECT_ROOT%build.log"
 set "VCPKG_PATH="
 
+
+
+
 REM =========================================
 REM 帮助信息
 REM =========================================
@@ -59,8 +62,58 @@ if not "%~2"=="" (
 echo VCPKG_PATH
 
 
+
 REM =========================================
-REM 1. 检测 VS 环境
+REM 1. 检测 vcpkg
+REM =========================================
+echo.
+echo [检测] 正在查找 vcpkg...
+
+set "VCPKG_EXE="
+if defined VCPKG_PATH (
+    set "VCPKG_EXE=%VCPKG_PATH%\vcpkg.exe"
+) else (
+    where vcpkg >nul 2>nul
+    if %errorlevel%==0 (
+        for /f "delims=" %%i in ('where vcpkg') do set "VCPKG_EXE=%%i"
+    )
+)
+
+
+REM ==========================
+REM 检查是否属于 VS 安装目录
+REM ==========================
+echo %VCPKG_EXE% | findstr /i "Microsoft Visual Studio" >nul
+if !errorlevel! == 0 (
+    set "VCPKG_EXE="
+)
+
+
+if not defined VCPKG_EXE (
+    echo [提示] 未检测到 vcpkg
+    set /p "choice=是否自动下载安装 vcpkg? (y/n): "
+    if /i "!choice!"=="y" (
+        echo [下载] 开始下载安装 vcpkg...
+        git clone https://github.com/microsoft/vcpkg "%PROJECT_ROOT%\vcpkg"
+        if errorlevel 1 (
+            echo [错误] vcpkg 下载失败
+            exit /b 1
+        )
+        set "VCPKG_EXE=%PROJECT_ROOT%\vcpkg\vcpkg.exe"
+        call "%PROJECT_ROOT%\vcpkg\bootstrap-vcpkg.bat"
+    ) else (
+        echo [退出] 用户取消安装 vcpkg
+        exit /b 1
+    )
+)
+
+echo [找到] vcpkg 路径: %VCPKG_EXE%
+echo [执行] vcpkg integrate install ...
+"%VCPKG_EXE%" integrate install
+
+
+REM =========================================
+REM 2. 检测 VS 环境
 REM =========================================
 echo =========================================
 echo KBEngine-Nex 构建脚本（自动检测 VS）
@@ -99,54 +152,21 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM =========================================
-REM 2. 检测 vcpkg
-REM =========================================
-echo.
-echo [检测] 正在查找 vcpkg...
 
-set "VCPKG_EXE="
-if defined VCPKG_PATH (
-    set "VCPKG_EXE=%VCPKG_PATH%\vcpkg.exe"
-) else (
-    where vcpkg >nul 2>nul
-    if %errorlevel%==0 (
-        for /f "delims=" %%i in ('where vcpkg') do set "VCPKG_EXE=%%i"
-    )
-)
-
-if not defined VCPKG_EXE (
-    echo [提示] 未检测到 vcpkg
-    set /p "choice=是否自动下载安装 vcpkg? (y/n): "
-    if /i "!choice!"=="y" (
-        echo [下载] 开始下载安装 vcpkg...
-        git clone https://github.com/microsoft/vcpkg "%PROJECT_ROOT%\vcpkg"
-        if errorlevel 1 (
-            echo [错误] vcpkg 下载失败
-            exit /b 1
-        )
-        set "VCPKG_EXE=%PROJECT_ROOT%\vcpkg\vcpkg.exe"
-        call "%PROJECT_ROOT%\vcpkg\bootstrap-vcpkg.bat"
-    ) else (
-        echo [退出] 用户取消安装 vcpkg
-        exit /b 1
-    )
-)
-
-echo [找到] vcpkg 路径: %VCPKG_EXE%
-echo [执行] vcpkg integrate install ...
-"%VCPKG_EXE%" integrate install
 
 REM =========================================
 REM 3. 编译工程
 REM =========================================
 echo.
-echo [步骤 1] 编译 pythonBuild.vcxproj ...
+echo [步骤 1] 编译 KBEMain.vcxproj ...
 echo 日志记录到 %LOG_FILE%
-powershell -Command "msbuild '%INIT_BUILD_PROJ%' /p:Configuration=%CONFIG% /p:Platform=%PLATFORM% | Tee-Object -FilePath '%LOG_FILE%'"
+msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% /p:Platform=%PLATFORM% /m ^
+    /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
+    /consoleloggerparameters:ForceConsoleColor
+@REM powershell -Command "$env:VCPKG_DEFAULT_TRIPLET='x64-windows-static'; msbuild '%INIT_BUILD_PROJ%' /p:Configuration=%CONFIG% /p:Platform=%PLATFORM% | Tee-Object -FilePath '%LOG_FILE%'"
 if errorlevel 1 (
     echo.
-    echo [错误] pythonBuild.vcxproj 编译失败，请检查 %LOG_FILE% 获取详细信息！
+    echo [错误] KBEMain.vcxproj 编译失败，请检查 %LOG_FILE% 获取详细信息！
     pause
     exit /b 1
 )
@@ -154,7 +174,10 @@ if errorlevel 1 (
 echo.
 echo [步骤 2] 编译 kbengine nex.sln ...
 echo 日志记录到 %LOG_FILE%
-powershell -Command "msbuild '%SOLUTION_FILE%' /p:Configuration=%CONFIG% /p:Platform=Win64 /m | Tee-Object -FilePath '%LOG_FILE%'"
+msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% /p:Platform=Win64 /m ^
+    /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
+    /consoleloggerparameters:ForceConsoleColor
+@REM powershell -Command "msbuild '%SOLUTION_FILE%' /p:Configuration=%CONFIG% /p:Platform=Win64 /m | Tee-Object -FilePath '%LOG_FILE%'"
 if errorlevel 1 (
     echo.
     echo [错误] kbengine nex.sln 编译失败，请检查 %LOG_FILE% 获取详细信息！
