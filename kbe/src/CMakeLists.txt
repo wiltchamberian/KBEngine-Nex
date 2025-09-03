@@ -70,6 +70,9 @@ add_link_options(${JEMALLOC_LDFLAGS})
 add_compile_definitions(USE_JEMALLOC)
 
 
+add_compile_definitions(KBE_USE_ASSERTS)
+add_compile_definitions(CODE_INLINE)
+
 find_package(fmt CONFIG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(EXPAT  REQUIRED COMPONENTS core)
