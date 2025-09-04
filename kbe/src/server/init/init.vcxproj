@@ -126,10 +126,10 @@
     <PostBuildEvent>
       <Command>if exist "..\..\lib\python\PCbuild\amd64\pyconfig.h" (
 
-    if exist "..\..\lib\python\Include\pyconfig.h" (
-        echo [INFO] 已找到 Include\pyconfig.h，无需复制，跳过。
+    if exist "..\..\libs\python313_d.lib" (
+        echo [INFO] 已找到 python313_d.lib，无需复制，跳过。
     ) else (
-        echo [INFO] 找到 PCbuild\amd64\pyconfig.h，正在复制文件...
+        echo [INFO] 正在复制文件...
 
         copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.lib" "..\..\libs"
         copy /Y "..\..\lib\python\PCbuild\amd64\python313_d.exp" "..\..\libs"
@@ -155,15 +155,15 @@
 </Command>
     </PostBuildEvent>
     <PreLinkEvent>
-      <Command>if not exist "..\..\lib\python\Include\pyconfig.h" (
-    echo [INFO] 未找到 pyconfig.h，正在构建 Python...
+      <Command>if not exist "..\..\libs\python313_d.lib" (
+    echo [INFO] 未找到 python313_d.lib，正在构建 Python...
     call "..\..\lib\python\PCbuild\build.bat" -c Debug
     if errorlevel 1 (
         echo [ERROR] Python 构建失败！
         exit /b 1
     )
 ) else (
-    echo [INFO] 已找到 pyconfig.h，跳过 Python 构建。
+    echo [INFO] 已找到 python313_d.lib，跳过 Python 构建。
 )
 </Command>
     </PreLinkEvent>
@@ -188,10 +188,10 @@
     <PostBuildEvent>
       <Command>if exist "..\..\lib\python\PCbuild\amd64\pyconfig.h" (
 
-    if exist "..\..\lib\python\Include\pyconfig.h" (
-        echo [INFO] 已找到 Include\pyconfig.h，无需复制，跳过。
+    if exist "..\..\libs\python313.lib" (
+        echo [INFO] 已找到 python313.lib，无需复制，跳过。
     ) else (
-        echo [INFO] 找到 PCbuild\amd64\pyconfig.h，正在复制文件...
+        echo [INFO] 正在复制文件...
 
         copy /Y "..\..\lib\python\PCbuild\amd64\python313.lib" "..\..\libs"
         copy /Y "..\..\lib\python\PCbuild\amd64\python313.exp" "..\..\libs"
@@ -217,15 +217,15 @@
 </Command>
     </PostBuildEvent>
     <PreLinkEvent>
-      <Command>if not exist "..\..\lib\python\Include\pyconfig.h" (
-    echo [INFO] 未找到 pyconfig.h，正在构建 Python...
+      <Command>if not exist "..\..\libs\python313.lib" (
+    echo [INFO] 未找到 python313.lib，正在构建 Python...
     call "..\..\lib\python\PCbuild\build.bat" -c Release
     if errorlevel 1 (
         echo [ERROR] Python 构建失败！
         exit /b 1
     )
 ) else (
-    echo [INFO] 已找到 pyconfig.h，跳过 Python 构建。
+    echo [INFO] 已找到 python313.lib，跳过 Python 构建。
 )
 </Command>
     </PreLinkEvent>

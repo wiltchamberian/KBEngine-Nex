@@ -59,7 +59,8 @@
     <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
-    <VCToolsVersion>14.44.35207</VCToolsVersion>
+    <VCToolsVersion>
+    </VCToolsVersion>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Template|Win32'">
     <PlatformToolset>v143</PlatformToolset>
@@ -119,6 +120,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>../../../../tools/server/guiconsole/</OutDir>
     <IntDir>..\..\..\_objs\$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgUseStatic>true</VcpkgUseStatic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
@@ -190,7 +200,7 @@
       <AdditionalOptions>/ignore:4049
 /ignore:4217
 /ignore:4244 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>openssl_uptable.obj;entitydef_d.lib;openssl_uptable.obj;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr_d.lib;python313_d.lib;pyscript_d.lib;xml_d.lib;common_d.lib;helper_d.lib;network_d.lib;thread_d.lib;client_lib_d.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Secur32.lib;Rpcrt4.lib;openssl_uptable.obj;entitydef_d.lib;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr_d.lib;python313_d.lib;pyscript_d.lib;xml_d.lib;common_d.lib;helper_d.lib;network_d.lib;thread_d.lib;client_lib_d.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../../libs;../../../lib/dependencies/vld;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -276,7 +286,7 @@
       <AdditionalOptions>/ignore:4049
 /ignore:4217
 /ignore:4244 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>entitydef.lib;openssl_uptable.obj;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python313.lib;pyscript.lib;xml.lib;common.lib;helper.lib;network.lib;thread.lib;client_lib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Secur32.lib;Rpcrt4.lib;entitydef.lib;openssl_uptable.obj;crypt32.lib;Version.lib;wldap32.lib;netapi32.lib;resmgr.lib;python313.lib;pyscript.lib;xml.lib;common.lib;helper.lib;network.lib;thread.lib;client_lib.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../../libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>

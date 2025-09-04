@@ -10,6 +10,7 @@ set "PLATFORM=x64"
 set "PROJECT_ROOT=%~dp0"
 set "INIT_BUILD_PROJ=%PROJECT_ROOT%kbe\src\server\init\init.vcxproj"
 set "SOLUTION_FILE=%PROJECT_ROOT%kbe\src\kbengine nex.sln"
+set "GUICONSOLE_SOLUTION_FILE=%PROJECT_ROOT%kbe\src\guiconsole.sln"
 set "LOG_FILE=%PROJECT_ROOT%build.log"
 set "VCPKG_PATH="
 
@@ -45,13 +46,10 @@ echo.
 echo 可用参数:
 echo   CONFIG=Debug^|Release      指定编译配置，默认 Debug
 echo   VCPKGPATH=路径            指定 vcpkg 安装路径
+echo   GUICONSOLE            安装 GUICONSOLE
 echo =========================================
 echo.
 if "%~1"=="help" exit /b 0
-
-
-
-
 
 
 
@@ -221,6 +219,12 @@ if errorlevel 1 (
 )
 
 
+if "%~3"=="GUICONSOLE" (
+    echo [安装] 正在安装 GUICONSOLE...
+    goto GUICONSOLE
+)
+
+
 @REM /p:VCToolsVersion=%MSVC_VER%
 echo.
 echo [步骤 2] 编译 kbengine nex.sln ...
@@ -229,6 +233,25 @@ msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=W
     /consoleloggerparameters:ForceConsoleColor
 if errorlevel 1 (
     echo [错误] kbengine nex.sln 编译失败，请检查 %LOG_FILE%
+    pause
+    exit /b 1
+)
+
+echo.
+echo [成功] 全部编译完成！
+pause
+exit /b 0
+
+
+
+:GUICONSOLE
+echo.
+echo [步骤 2] 安装 GUICONSOLE
+msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
+    /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
+    /consoleloggerparameters:ForceConsoleColor
+if errorlevel 1 (
+    echo [错误] guiconsole.sln 编译失败，请检查 %LOG_FILE%
     pause
     exit /b 1
 )
