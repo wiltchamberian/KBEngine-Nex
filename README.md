@@ -62,6 +62,122 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 - **快速开发游戏**：只需要使用Python就可以快速的进行设计游戏。 底层安全可靠，保证效率。
 
 
+---
+
+
+## 安装
+
+
+### 1. 安装 Git
+
+**作用**：Git 是分布式版本控制工具，用于从 GitHub 拉取 KBEngine-Nex 的源代码以及vcpkg依赖支持。
+
+**安装步骤**：
+
+```
+# 下载 Git 安装程序
+https://git-scm.com/download/win
+
+# 安装完成后验证
+git --version
+```
+
+
+### 2. 安装 vcpkg（可选）
+
+**作用**：vcpkg 是 C++ 包管理工具，用于安装 KBEngine-Nex 所需的依赖库（如 OpenSSL 等）。
+
+**提示**：如果本机不安装vcpkg，则脚本会自动安装vcpkg到项目根目录。
+
+**安装步骤**：
+
+```
+# 克隆 vcpkg 仓库
+git clone https://github.com/microsoft/vcpkg.git
+
+# 进入 vcpkg 目录
+cd vcpkg
+
+# 编译 vcpkg
+.\bootstrap-vcpkg.bat
+```
+
+
+### 3. 设置环境变量（可选）
+
+**作用**：将 vcpkg 添加到系统环境变量中，可在任意命令行窗口直接使用 vcpkg，无需每次手动指定路径。
+
+**设置方法**：
+
+```
+1. 打开系统属性 → 高级 → 环境变量
+2. 在系统变量中找到 Path，点击编辑
+3. 添加 vcpkg 安装路径，例如：
+   D:\Tools\vcpkg
+4. 保存并重新打开命令行窗口，验证：
+   vcpkg --version
+```
+
+> 如果未设置环境变量，后续 `build.bat` 需要手动指定 `VCPKGPATH`。
+
+
+### 4. 拉取 KBEngine-Nex 仓库
+
+**作用**：获取源代码用于编译和开发。
+
+```
+git clone https://github.com/KBEngineLab/KBEngine-Nex.git
+cd KBEngine-Nex
+```
+
+
+### 5. 执行编译脚本 `build.bat`
+
+**作用**：自动编译 KBEngine-Nex 服务端和工具。
+
+**使用方法**：
+
+``` CMD
+build.bat [CONFIG] [VCPKGPATH]
+```
+
+**参数说明**：
+
+| 参数       | 说明                                | 默认值   |
+|------------|-----------------------------------|---------|
+| CONFIG     | 指定编译配置，`Debug` 或 `Release` | Debug   |
+| VCPKGPATH  | 指定 vcpkg 安装路径                 | 可选 |
+| GUICONSOLE | 安装 GUI 控制台工具                 | 可选    |
+
+**示例**：
+
+```CMD
+# 使用默认 Debug 配置
+build.bat
+
+# 指定 Release 配置并指定 vcpkg 路径
+build.bat Release D:\Tools\vcpkg
+
+# 编译并安装 GUICONSOLE
+build.bat Debug D:\Tools\vcpkg GUICONSOLE
+
+# 所有示例
+build.bat Debug
+build.bat Debug "VCPKGPATH"
+build.bat Debug "" GUICONSOLE
+build.bat Release
+build.bat Release "VCPKGPATH"
+build.bat Release  "" GUICONSOLE
+```
+
+
+### 6. 编译完成
+
+编译成功后，`bin` 和 `lib` 目录下将生成可执行文件和库文件，可直接运行。
+
+
+---
+
 ## 支持的引擎
 
 <span height="20">&nbsp;</span>
