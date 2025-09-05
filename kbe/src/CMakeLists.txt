@@ -4,12 +4,106 @@ project(KBEngineNex LANGUAGES C CXX)
 # 设置 C++ 标准
 set(CMAKE_CXX_STANDARD 11)
 
-
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 设置多线程支持
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads REQUIRED)
+
+
+
+# -----------------------------
+# KBE 配置类型
+# -----------------------------
+set(KBE_SUPPORTED_CONFIGS
+    Release
+    Hybrid
+    Debug
+    Evaluation
+    Debug_SingleThreaded
+    Hybrid_SingleThreaded
+    Release_SingleThreaded
+    Debug_GCOV
+    Debug_GCOV_SingleThreaded
+)
+
+# 如果用户没有传入 KBE_CONFIG，则默认 Hybrid
+if(NOT DEFINED KBE_CONFIG)
+    set(KBE_CONFIG "Hybrid" CACHE STRING "KBE Build Configuration")
+endif()
+
+# 校验 KBE_CONFIG 是否有效
+list(FIND KBE_SUPPORTED_CONFIGS ${KBE_CONFIG} _config_index)
+if(_config_index EQUAL -1)
+    message(FATAL_ERROR "Unknown KBE_CONFIG: ${KBE_CONFIG}. Supported configs are: ${KBE_SUPPORTED_CONFIGS}")
+endif()
+
+message(STATUS "Using KBE_CONFIG: ${KBE_CONFIG}")
+
+add_compile_definitions(KBE_CONFIG="${KBE_CONFIG}")
+
+
+# -----------------------------
+# 根据 KBE_CONFIG 设置 CMAKE_BUILD_TYPE
+# -----------------------------
+if(KBE_CONFIG MATCHES "Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+    add_compile_definitions(_RELEASE)
+endif()
+
+if(KBE_CONFIG MATCHES "Debug")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+    add_compile_definitions(KBE_USE_ASSERTS)
+    add_compile_definitions(_DEBUG)
+endif()
+
+if(KBE_CONFIG MATCHES "Hybrid")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
+    add_compile_definitions(KBE_USE_ASSERTS)
+    add_compile_definitions(_HYBRID)
+endif()
+
+if(KBE_CONFIG MATCHES "Evaluation")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
+    add_compile_definitions(KBE_USE_ASSERTS)
+    add_compile_definitions(KBE_EVALUATION)
+    add_compile_definitions(_HYBRID)
+endif()
+
+if(KBE_CONFIG MATCHES "GCOV")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+endif()
+
+
+
+
+
+# -----------------------------
+# 根据 KBE_CONFIG 设置宏
+# -----------------------------
+
+# Release 或 Hybrid 或 Evaluation 都加 CODE_INLINE
+if(KBE_CONFIG MATCHES "Release|Hybrid|Evaluation")
+    add_compile_definitions(CODE_INLINE)
+endif()
+
+# 单线程模式宏
+if(KBE_CONFIG MATCHES "SingleThreaded")
+    add_compile_definitions(KBE_SINGLE_THREADED)
+endif()
+
+
+# GCOV 选项
+if(KBE_CONFIG MATCHES "GCOV")
+    add_compile_options(-fprofile-arcs -ftest-coverage)
+endif()
+
+# -----------------------------
+# pthread 支持（非单线程才加）
+# -----------------------------
+if(NOT KBE_CONFIG MATCHES "SingleThreaded")
+    set(THREADS_PREFER_PTHREAD_FLAG ON)
+    find_package(Threads REQUIRED)
+    link_libraries(Threads::Threads)
+endif()
+
 
 
 # 关闭一些编译警告
@@ -70,8 +164,18 @@ add_link_options(${JEMALLOC_LDFLAGS})
 add_compile_definitions(USE_JEMALLOC)
 
 
-add_compile_definitions(KBE_USE_ASSERTS)
-add_compile_definitions(CODE_INLINE)
+
+add_compile_definitions(KBE_SERVER)
+
+# # Release 才开启 CODE_INLINE
+# if(KBE_CONFIG MATCHES "^Release")
+#     add_compile_definitions(CODE_INLINE)
+#     add_compile_definitions(_RELEASE)
+# endif()
+# if(KBE_CONFIG MATCHES "^Debug")
+#     add_compile_definitions(_DEBUG)
+# endif()
+
 
 find_package(fmt CONFIG REQUIRED)
 find_package(CURL REQUIRED)
@@ -95,25 +199,17 @@ pkg_check_modules(APRUTIL REQUIRED apr-util-1)
 include_directories(${APRUTIL_INCLUDE_DIRS})
 link_libraries(${APRUTIL_LIBRARIES})
 
+# $<$<CONFIG:Debug>:KBE_CONFIG=\"Debug\">
+# $<$<CONFIG:Release>:KBE_CONFIG=\"Release\">
+# $<$<CONFIG:RelWithDebInfo>:KBE_CONFIG=\"RelWithDebInfo\">
+# $<$<CONFIG:MinSizeRel>:KBE_CONFIG=\"MinSizeRel\">
 
 add_compile_definitions(
-    $<$<CONFIG:Debug>:KBE_CONFIG=\"Debug\">
-    $<$<CONFIG:Release>:KBE_CONFIG=\"Release\">
-    $<$<CONFIG:RelWithDebInfo>:KBE_CONFIG=\"RelWithDebInfo\">
-    $<$<CONFIG:MinSizeRel>:KBE_CONFIG=\"MinSizeRel\">
+
     ENABLE_WATCHERS=1
 )
 
 
-# 关闭 curl 的一些不必要的组件
-# set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries")
-# set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable")
-# set(BUILD_TESTING OFF CACHE BOOL "Disable curl tests")
-# set(ENABLE_MANUAL OFF CACHE BOOL "Disable curl manual")
-# set(CURL_DISABLE_MANUAL ON CACHE BOOL "Disable curl man page")
-# set(BUILD_DOC OFF CACHE BOOL "Disable curl documentation")
-
-# add_subdirectory(lib/dependencies/curl)
 add_subdirectory(lib/dependencies/g3dlite)
 add_subdirectory(lib/dependencies/jwsmtp/jwsmtp/jwsmtp)
 add_subdirectory(lib/dependencies/sigar/linux)
