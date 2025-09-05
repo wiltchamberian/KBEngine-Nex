@@ -67,9 +67,9 @@ if(KBE_CONFIG MATCHES "Evaluation")
     add_compile_definitions(_HYBRID)
 endif()
 
-if(KBE_CONFIG MATCHES "GCOV")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
-endif()
+# if(KBE_CONFIG MATCHES "GCOV")
+#     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+# endif()
 
 
 
