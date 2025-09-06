@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 project(KBEngineNex LANGUAGES C CXX)
 
 # 设置 C++ 标准
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -46,6 +46,8 @@ add_compile_definitions(KBE_CONFIG="${KBE_CONFIG}")
 if(KBE_CONFIG MATCHES "Release")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
     add_compile_definitions(_RELEASE)
+    add_compile_definitions(_FORTIFY_SOURCE=2)
+    
 endif()
 
 if(KBE_CONFIG MATCHES "Debug")
@@ -58,6 +60,7 @@ if(KBE_CONFIG MATCHES "Hybrid")
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
     add_compile_definitions(KBE_USE_ASSERTS)
     add_compile_definitions(_HYBRID)
+    add_compile_definitions(_FORTIFY_SOURCE=2)
 endif()
 
 if(KBE_CONFIG MATCHES "Evaluation")
@@ -65,11 +68,12 @@ if(KBE_CONFIG MATCHES "Evaluation")
     add_compile_definitions(KBE_USE_ASSERTS)
     add_compile_definitions(KBE_EVALUATION)
     add_compile_definitions(_HYBRID)
+    add_compile_definitions(_FORTIFY_SOURCE=2)
 endif()
 
-if(KBE_CONFIG MATCHES "GCOV")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
-endif()
+# if(KBE_CONFIG MATCHES "GCOV")
+#     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+# endif()
 
 
 
@@ -108,6 +112,8 @@ endif()
 
 # 关闭一些编译警告
 add_compile_options(-Wno-deprecated-declarations)
+# add_compile_options(-fsanitize=address -O1 -g)
+# add_link_options(-fsanitize=address)
 
 
 
