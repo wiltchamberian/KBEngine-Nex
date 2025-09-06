@@ -59,8 +59,15 @@ endif()
 if(KBE_CONFIG MATCHES "Hybrid")
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type" FORCE)
     add_compile_definitions(KBE_USE_ASSERTS)
-    add_compile_definitions(_HYBRID)
-    add_compile_definitions(_FORTIFY_SOURCE=2)
+    add_compile_definitions(_HYBRID)    
+    # add_compile_definitions(_FORTIFY_SOURCE=2)
+
+    # 常规选项
+    add_compile_options(-O2 -g -fno-omit-frame-pointer)
+
+    # 启用 AddressSanitizer
+    add_compile_options(-fsanitize=address)
+    add_link_options(-fsanitize=address)
 endif()
 
 if(KBE_CONFIG MATCHES "Evaluation")
@@ -78,6 +85,8 @@ endif()
 
 
 
+
+add_compile_options(-Wall)
 
 # -----------------------------
 # 根据 KBE_CONFIG 设置宏
