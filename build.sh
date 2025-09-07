@@ -106,6 +106,27 @@ if ! command -v build-essential >/dev/null 2>&1; then
     sudo apt-get install -y build-essential
 fi
 
+# 允许 Python 调用 C 动态库（ctypes 模块）。
+if ! dpkg -s libffi-dev >/dev/null 2>&1; then
+    echo ">>> 安装 libffi-dev"
+    sudo apt-get update
+    sudo apt-get install -y libffi-dev
+fi
+
+#  Python UUID。
+if ! dpkg -s uuid-dev >/dev/null 2>&1; then
+    echo ">>> 安装 uuid-dev"
+    sudo apt-get update
+    sudo apt-get install -y uuid-dev
+fi
+
+#  bzip2 压缩支持
+if ! dpkg -s libbz2-dev >/dev/null 2>&1; then
+    echo ">>> 安装 libbz2-dev"
+    sudo apt-get update
+    sudo apt-get install -y libbz2-dev
+fi
+
 # ------------------------------
 # 9. vcpkg
 # ------------------------------
