@@ -84,6 +84,7 @@ kbe/bin/server/loginapp.lib
 kbe/bin/server/machine.lib
 kbe/bin/server/python37_d.dll
 kbe/bin/server/python313_d.dll
+kbe/bin/server/python313.dll
 kbe/bin/server/vcruntime140.dll
 kbe/bin/server/vcruntime140_1.dll
 kbe/src/.vs
