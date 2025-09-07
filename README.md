@@ -65,6 +65,17 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 ---
 
 
+## 测试平台
+
+| 平台    | 系统版本          | 引擎版本           |
+| ------- | ----------------- | ------------------ |
+| ubuntu  | 24.04.3           | KBEngine Nex 2.6.3 |
+| ubuntu  | 22.04.5           | KBEngine Nex 2.6.3 |
+| Windows | 专业版 22621.4317 | KBEngine Nex 2.6.3 |
+
+
+---
+
 ## 安装
 
 
@@ -143,11 +154,11 @@ build.bat [CONFIG] [VCPKGPATH]
 
 **参数说明**：
 
-| 参数       | 说明                                | 默认值   |
-|------------|-----------------------------------|---------|
-| CONFIG     | 指定编译配置，`Debug` 或 `Release` | Debug   |
-| VCPKGPATH  | 指定 vcpkg 安装路径                 | 可选 |
-| GUICONSOLE | 安装 GUI 控制台工具                 | 可选    |
+| 参数       | 说明                               | 默认值 |
+| ---------- | ---------------------------------- | ------ |
+| CONFIG     | 指定编译配置，`Debug` 或 `Release` | Debug  |
+| VCPKGPATH  | 指定 vcpkg 安装路径                | 可选   |
+| GUICONSOLE | 安装 GUI 控制台工具                | 可选   |
 
 **示例**：
 
@@ -197,14 +208,16 @@ build.bat Release  "" GUICONSOLE
 	<a href="https://godotengine.org/" target="_blank"><img src="https://raw.githubusercontent.com/KBEngineLab/KBEngineNexMaterials/938f6a964c299176995384985cde18fb88accb5c/images/third_party_logo/godot-logo.svg" alt="Godot" height="30"></a>
 </div>
 
-
 ## Demo
 
-	Unity		: https://github.com/KBEngineLab/demo_kbengine_unity3d_default
-	UE5		: https://github.com/KBEngineLab/demo_kbengine_ue5_default
-	CocosCreator	: https://github.com/KBEngineLab/demo_kbengine_cocos_creator_default
-	Godot		: https://github.com/KBEngineLab/demo_kbengine_godot_default
-	UE4		: https://github.com/kbengine/kbengine_ue4_demo
+| 平台         | 链接                                                               |
+| ------------ | ------------------------------------------------------------------ |
+| Unity        | https://github.com/KBEngineLab/demo_kbengine_unity3d_default       |
+| UE5          | https://github.com/KBEngineLab/demo_kbengine_ue5_default           |
+| CocosCreator | https://github.com/KBEngineLab/demo_kbengine_cocos_creator_default |
+| Godot        | https://github.com/KBEngineLab/demo_kbengine_godot_default         |
+
+
 	
 <!-- Cocos2d_js	: https://github.com/kbengine/kbengine_cocos2d_js_demo -->
 <!-- Godot Engine	: https://github.com/krogank9/kbe_godot_demo -->
