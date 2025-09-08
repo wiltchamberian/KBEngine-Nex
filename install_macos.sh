@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
+
 # ==============================
 # 安装 KBEngine-Nex (macOS 版本)
 # ==============================
@@ -9,6 +10,18 @@ set -e
 KBE_CONFIG=${1:-Release}
 
 echo ">>> 使用构建类型: $KBE_CONFIG"
+
+
+# ------------------------------
+# 0. 检查并安装 Xcode Command Line Tools
+# ------------------------------
+if ! xcode-select -p >/dev/null 2>&1; then
+    echo ">>> 安装 Xcode Command Line Tools"
+    xcode-select --install
+    echo "请完成安装后重新运行本脚本"
+    exit 1
+fi
+echo ">>> 已检测到 Xcode Command Line Tools"
 
 # ------------------------------
 # 1. 检查系统版本
