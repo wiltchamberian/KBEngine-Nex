@@ -37,7 +37,7 @@ target_link_libraries(interfaces PRIVATE python_interface)
 target_link_options(interfaces PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
-target_link_libraries(interfaces PRIVATE OpenSSL::SSL)
+target_link_libraries(interfaces PRIVATE KBEOpenSSL::SSL)
 
 
 # 设置可执行文件输出目录

@@ -44,7 +44,7 @@ set(SRCS
 add_library(network STATIC ${SRCS})
 
 # ---------------- OpenSSL ----------------
-target_link_libraries(network PRIVATE OpenSSL::SSL)
+target_link_libraries(network PRIVATE KBEOpenSSL::SSL)
 
 
 target_link_libraries(network PRIVATE CURL::libcurl)

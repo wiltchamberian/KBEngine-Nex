@@ -44,7 +44,7 @@ target_link_libraries(kbcmd PRIVATE python_interface)
 target_link_options(kbcmd PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
-target_link_libraries(kbcmd PRIVATE OpenSSL::SSL)
+target_link_libraries(kbcmd PRIVATE KBEOpenSSL::SSL)
 
 
 # 设置可执行文件输出目录

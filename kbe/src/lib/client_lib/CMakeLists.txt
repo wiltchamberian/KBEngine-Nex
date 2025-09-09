@@ -19,7 +19,7 @@ set(SRCS
 add_library(client_lib STATIC ${SRCS})
 
 # ---------------- OpenSSL ----------------
-target_link_libraries(client_lib PRIVATE OpenSSL::SSL)
+target_link_libraries(client_lib PRIVATE KBEOpenSSL::SSL)
 
 # ---------------- log4cxx ----------------
 

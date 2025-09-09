@@ -50,7 +50,7 @@ target_link_libraries(baseapp PRIVATE python_interface)
 target_link_options(baseapp PRIVATE -Wl,-export-dynamic)
 
 # ---------------- OpenSSL ----------------
-target_link_libraries(baseapp PRIVATE OpenSSL::SSL)
+target_link_libraries(baseapp PRIVATE KBEOpenSSL::SSL)
 
 # 设置可执行文件输出目录
 set_target_properties(baseapp PROPERTIES
