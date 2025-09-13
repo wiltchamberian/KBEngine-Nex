@@ -67,17 +67,18 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 
 ## 测试平台
 
-| 平台    | 系统版本          | 引擎版本           |
-| ------- | ----------------- | ------------------ |
-| ubuntu  | 24.04.3           | KBEngine Nex 2.6.3 |
-| ubuntu  | 22.04.5           | KBEngine Nex 2.6.3 |
-| Windows | 专业版 22621.4317 | KBEngine Nex 2.6.3 |
+| 平台    | 系统版本          | 环境                      | 引擎版本 |
+| ------- | ----------------- | ------------------------- | -------- |
+| ubuntu  | 24.04.3           | g++ 13 <br> openssl3.x    | Nex 2.6.3    |
+| ubuntu  | 22.04.5           | g++ 9 <br> openssl1.1.x   | Nex 2.6.3    |
+| Windows | 专业版 22621.4317 | msbuild <br> openssl1.0.x | Nex 2.6.3    |
 
 
 ---
 
 ## 安装
 
+**注意：VCPKG强依赖于Github，需要网络支持，请自行解决网络问题！**
 
 ### 1. 安装 Git
 
@@ -85,6 +86,7 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 
 **安装步骤**：
 
+##### Windows：
 ```
 # 下载 Git 安装程序
 https://git-scm.com/download/win
@@ -93,12 +95,17 @@ https://git-scm.com/download/win
 git --version
 ```
 
+##### Linux：
+```
+sudo apt install git #Ubuntu
+```
+
 
 ### 2. 安装 vcpkg（可选）
 
 **作用**：vcpkg 是 C++ 包管理工具，用于安装 KBEngine-Nex 所需的依赖库（如 OpenSSL 等）。
 
-**提示**：如果本机不安装vcpkg，则脚本会自动安装vcpkg到项目根目录。
+**提示**：如果本机不安装vcpkg，则脚本会自动安装vcpkg到用户根目录。
 
 **安装步骤**：
 
@@ -110,46 +117,24 @@ git clone https://github.com/microsoft/vcpkg.git
 cd vcpkg
 
 # 编译 vcpkg
-.\bootstrap-vcpkg.bat
+.\bootstrap-vcpkg.bat #Windows
+.\bootstrap-vcpkg.sh #Linux
 ```
 
 
-### 3. 设置环境变量（可选）
-
-**作用**：将 vcpkg 添加到系统环境变量中，可在任意命令行窗口直接使用 vcpkg，无需每次手动指定路径。
-
-**设置方法**：
-
-```
-1. 打开系统属性 → 高级 → 环境变量
-2. 在系统变量中找到 Path，点击编辑
-3. 添加 vcpkg 安装路径，例如：
-   D:\Tools\vcpkg
-4. 保存并重新打开命令行窗口，验证：
-   vcpkg --version
-```
-
-> 如果未设置环境变量，后续 `build.bat` 需要手动指定 `VCPKGPATH`。
-
-
-### 4. 拉取 KBEngine-Nex 仓库
-
-**作用**：获取源代码用于编译和开发。
-
-```
-git clone https://github.com/KBEngineLab/KBEngine-Nex.git
-cd KBEngine-Nex
-```
-
-
-### 5. 执行编译脚本 `build.bat`
+### 3. 执行编译脚本 `install_*.bat/sh`
 
 **作用**：自动编译 KBEngine-Nex 服务端和工具。
 
 **使用方法**：
 
 ``` CMD
-build.bat [CONFIG] [VCPKGPATH]
+install_windows.bat [CONFIG] [VCPKGPATH]
+```
+
+``` sh
+# Linux 下不支持设置vcpkg路径，脚本会自动安装vcpkg到~/kbe-vcpkg中
+install_linux.sh [CONFIG]
 ```
 
 **参数说明**：
@@ -162,30 +147,43 @@ build.bat [CONFIG] [VCPKGPATH]
 
 **示例**：
 
+##### Windows：
 ```CMD
 # 使用默认 Debug 配置
-build.bat
+install_windows.bat
 
 # 指定 Release 配置并指定 vcpkg 路径
-build.bat Release D:\Tools\vcpkg
+install_windows.bat Release D:\Tools\vcpkg
 
 # 编译并安装 GUICONSOLE
-build.bat Debug D:\Tools\vcpkg GUICONSOLE
+install_windows.bat Debug D:\Tools\vcpkg GUICONSOLE
 
 # 所有示例
-build.bat Debug
-build.bat Debug "VCPKGPATH"
-build.bat Debug "" GUICONSOLE
-build.bat Release
-build.bat Release "VCPKGPATH"
-build.bat Release  "" GUICONSOLE
+install_windows.bat Debug
+install_windows.bat Debug "VCPKGPATH"
+install_windows.bat Debug "" GUICONSOLE
+install_windows.bat Release
+install_windows.bat Release "VCPKGPATH"
+install_windows.bat Release  "" GUICONSOLE
 ```
 
 
-### 6. 编译完成
+##### Linux：
+```sh
+# 使用默认 Release 配置
+install_linux.sh
 
-编译成功后，`bin` 和 `lib` 目录下将生成可执行文件和库文件，可直接运行。
+# 指定Debug
+# Linux下支持 Release、Debug、Hybrid、Evaluation
+install_linux.sh Debug
 
+
+# 所有示例
+install_linux.sh Debug
+install_linux.sh Release
+install_linux.sh Hybrid
+install_linux.sh Evaluation
+```
 
 ---
 
