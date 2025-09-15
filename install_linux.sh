@@ -1,177 +1,160 @@
-#!/usr/bin/env bash
+#!/bin/sh
 set -e
 
 
 # =========================================
-# 检查 GitHub 网络可访问性
+# 发行版检测与包管理器选择
+# =========================================
+UPDATED=0
+
+if command -v apt-get >/dev/null 2>&1; then
+    INSTALL_CMD="sudo apt-get install -y"
+    PKG_CHECK="dpkg -s"
+    PKG_UPDATE="sudo apt-get update -y"
+elif command -v dnf >/dev/null 2>&1; then
+    INSTALL_CMD="sudo dnf install -y"
+    PKG_CHECK="rpm -q"
+    PKG_UPDATE="sudo dnf makecache -y"
+elif command -v yum >/dev/null 2>&1; then
+    INSTALL_CMD="sudo yum install -y"
+    PKG_CHECK="rpm -q"
+    PKG_UPDATE="sudo yum makecache -y"
+elif command -v zypper >/dev/null 2>&1; then
+    INSTALL_CMD="sudo zypper install -y"
+    PKG_CHECK="rpm -q"
+    PKG_UPDATE="sudo zypper refresh"
+elif command -v pacman >/dev/null 2>&1; then
+    INSTALL_CMD="sudo pacman -S --noconfirm --needed"
+    PKG_CHECK="pacman -Qi"
+    PKG_UPDATE="sudo pacman -Sy"
+elif command -v apk >/dev/null 2>&1; then
+    INSTALL_CMD="sudo apk add --no-cache"
+    PKG_CHECK="apk info"
+    PKG_UPDATE=""
+else
+    echo "[ERROR] 未知的包管理器，请手动安装依赖"
+    exit 1
+fi
+
+update_pkg_index() {
+    if [ "$UPDATED" -eq 0 ]; then
+        if [ -n "$PKG_UPDATE" ]; then
+            echo "[INFO] 更新软件源..."
+            $PKG_UPDATE || true
+        fi
+        UPDATED=1
+    fi
+}
+
+
+update_pkg_index
+
+
+# =========================================
+# GitHub 可访问性检查
 # =========================================
 echo "[检测] 尝试访问 GitHub 仓库..."
-if ! git ls-remote https://github.com/microsoft/vcpkg.git &>/dev/null; then
-    echo "[错误] 无法访问 GitHub 仓库！"
-    echo "       可能是网络问题或需要代理，请自行解决网络问题后再运行脚本。"
+if ! command -v git >/dev/null 2>&1; then
+    echo "[WARN] 未安装 git，稍后会自动安装"
+fi
+
+if ! git ls-remote https://github.com/microsoft/vcpkg.git >/dev/null 2>&1; then
+    echo "[ERROR] 无法访问 GitHub 仓库，请确保网络或代理可用"
     exit 1
 fi
 echo "[成功] GitHub 仓库可访问"
 
 
-# ==============================
-# 安装 KBEngine-Nex 脚本
-# ==============================
+install_dep() {
+    NAME="$1"
+    shift
+    for PKG in "$@"; do
+        # 检查是否已安装
+        if $PKG_CHECK "$PKG" >/dev/null 2>&1; then
+            echo "[INFO] $NAME 已安装 ($PKG)"
+            return 0
+        fi
+    done
+    # 尝试安装候选包
+    for PKG in "$@"; do
+        echo "[INFO] 尝试安装 $NAME ($PKG)"
+        if $INSTALL_CMD "$PKG" >/dev/null 2>&1; then
+            echo "[INFO] 安装成功: $PKG"
+            return 0
+        fi
+    done
+    echo "[WARN] 未能安装 $NAME，请手动安装 (候选: $*)"
+    return 1
+}
 
-# 默认构建类型（可通过参数覆盖）
+# =========================================
+# 构建类型
+# =========================================
 KBE_CONFIG=${1:-Release}
+echo "[INFO] 使用构建类型: $KBE_CONFIG"
 
-echo ">>> 使用构建类型: $KBE_CONFIG"
+# =========================================
+# 基础工具
+# =========================================
+install_dep "Git" git
+install_dep "GCC" gcc
+install_dep "G++" g++ gcc-c++
+install_dep "Make" make
+install_dep "Autoconf" autoconf
+install_dep "Libtool" libtool-bin libtool
+install_dep "CMake" cmake
+install_dep "pkg-config" pkg-config pkgconf-pkg-config pkgconf
+install_dep "Build Tools" build-essential "@development-tools" base-devel
+install_dep "curl" curl
+install_dep "zip" zip
+install_dep "unzip" unzip
+install_dep "tar" tar
 
-# ------------------------------
-# 1. 检查系统版本
-# ------------------------------
-UBUNTU_VERSION=$(lsb_release -rs | cut -d'.' -f1)
-if [ "$UBUNTU_VERSION" -lt 20 ]; then
-    echo "错误: 需要 Ubuntu 20.04 或更高版本，当前版本: $UBUNTU_VERSION"
-    exit 1
-fi
-echo ">>> 系统版本检查通过: Ubuntu $UBUNTU_VERSION"
+# =========================================
+# 额外依赖
+# =========================================
+install_dep "TIRPC" libtirpc-dev libtirpc-devel libtirpc
+install_dep "MySQL/MariaDB" \
+    libmysqlclient-dev libmariadb-dev \
+    mariadb-devel mysql-devel mariadb-connector-c-devel \
+    libmariadb-devel libmysqlclient-devel \
+    mariadb-clients mariadb-libs \
+    mariadb-connector-c-dev mysql-dev
+install_dep "libffi" libffi-dev libffi-devel libffi
+install_dep "UUID" uuid-dev libuuid-devel util-linux-dev
+install_dep "BZip2" libbz2-dev bzip2-devel libbz2-devel bzip2
+install_dep "OpenSSL" libssl-dev openssl-devel openssl-dev
+install_dep "Zlib" zlib1g-dev zlib-devel zlib-dev
+install_dep "CURL Dev" libcurl4-openssl-dev libcurl-devel curl-dev
 
-# ------------------------------
-# 2. 检查 gcc g++
-# ------------------------------
-if ! command -v gcc >/dev/null 2>&1; then
-    echo ">>> 安装 gcc"
-    sudo apt-get update
-    sudo apt-get install -y gcc
-fi
-if ! command -v g++ >/dev/null 2>&1; then
-    echo ">>> 安装 g++"
-    sudo apt-get update
-    sudo apt-get install -y g++
-fi
-
-# ------------------------------
-# 3. autoconf
-# ------------------------------
-if ! command -v autoconf >/dev/null 2>&1; then
-    echo ">>> 安装 autoconf"
-    sudo apt-get update
-    sudo apt-get install -y autoconf
-fi
-
-# ------------------------------
-# 4. libtool-bin
-# ------------------------------
-if ! dpkg -s libtool-bin >/dev/null 2>&1; then
-    echo ">>> 安装 libtool-bin"
-    sudo apt-get update
-    sudo apt-get install -y libtool-bin
-fi
-
-# ------------------------------
-# 5. libtirpc-dev
-# ------------------------------
-if ! dpkg -s libtirpc-dev >/dev/null 2>&1; then
-    echo ">>> 安装 libtirpc-dev"
-    sudo apt-get update
-    sudo apt-get install -y libtirpc-dev
-fi
-
-# ------------------------------
-# 6. libmysqlclient-dev
-# ------------------------------
-if ! dpkg -s libmysqlclient-dev >/dev/null 2>&1; then
-    echo ">>> 安装 libmysqlclient-dev"
-    sudo apt-get update
-    sudo apt-get install -y libmysqlclient-dev
-fi
-
-# ------------------------------
-# 7. curl zip unzip tar
-# ------------------------------
-for pkg in curl zip unzip tar; do
-    if ! command -v $pkg >/dev/null 2>&1; then
-        echo ">>> 安装 $pkg"
-        sudo apt-get update
-        sudo apt-get install -y $pkg
-    fi
-done
-
-# ------------------------------
-# 8. cmake
-# ------------------------------
-if ! command -v cmake >/dev/null 2>&1; then
-    echo ">>> 安装 cmake"
-    sudo apt-get update
-    sudo apt-get install -y cmake
-fi
-
-
-
-if ! command -v pkg-config >/dev/null 2>&1; then
-    echo ">>> 安装 pkg-config"
-    sudo apt-get update
-    sudo apt-get install -y pkg-config
-fi
-
-
-
-if ! dpkg -s  build-essential >/dev/null 2>&1; then
-    echo ">>> 安装 build-essential"
-    sudo apt-get update
-    sudo apt-get install -y build-essential
-fi
-
-# 允许 Python 调用 C 动态库（ctypes 模块）。
-if ! dpkg -s libffi-dev >/dev/null 2>&1; then
-    echo ">>> 安装 libffi-dev"
-    sudo apt-get update
-    sudo apt-get install -y libffi-dev
-fi
-
-#  Python UUID。
-if ! dpkg -s uuid-dev >/dev/null 2>&1; then
-    echo ">>> 安装 uuid-dev"
-    sudo apt-get update
-    sudo apt-get install -y uuid-dev
-fi
-
-#  bzip2 压缩支持
-if ! dpkg -s libbz2-dev >/dev/null 2>&1; then
-    echo ">>> 安装 libbz2-dev"
-    sudo apt-get update
-    sudo apt-get install -y libbz2-dev
-fi
-
-# ------------------------------
-# 9. vcpkg
-# ------------------------------
-VCPKG_DIR=~/kbe-vcpkg
+# =========================================
+# vcpkg 安装
+# =========================================
+VCPKG_DIR="$HOME/kbe-vcpkg"
 if [ ! -d "$VCPKG_DIR" ] || [ ! -f "$VCPKG_DIR/bootstrap-vcpkg.sh" ]; then
-    echo ">>> 克隆并安装 vcpkg"
+    echo "[INFO] 克隆 vcpkg"
     git clone https://github.com/microsoft/vcpkg.git "$VCPKG_DIR"
-    
 else
-    echo ">>> vcpkg 已存在: $VCPKG_DIR"
+    echo "[INFO] vcpkg 已存在: $VCPKG_DIR"
 fi
 
 OLDPWD=$(pwd)
-
-
 cd "$VCPKG_DIR"
 ./bootstrap-vcpkg.sh
 cd "$OLDPWD"
 
-echo ">>> ./kbe/src/"
+# =========================================
+# 构建 KBEngine-Nex
+# =========================================
+echo "[INFO] 进入 ./kbe/src/"
 cd "./kbe/src/"
 
-# ------------------------------
-# 10. 运行 CMake 配置
-# ------------------------------
-echo ">>> 配置 CMake"
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=$VCPKG_DIR/scripts/buildsystems/vcpkg.cmake -DKBE_CONFIG=$KBE_CONFIG
+echo "[INFO] 配置 CMake"
+cmake -B build -S . \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_DIR/scripts/buildsystems/vcpkg.cmake" \
+    -DKBE_CONFIG="$KBE_CONFIG"
 
-# ------------------------------
-# 11. 构建
-# ------------------------------
-echo ">>> 开始编译 KBEngine-Nex"
-cmake --build build -j8
+echo "[INFO] 开始编译 KBEngine-Nex"
+cmake --build build -j"$(nproc)"
 
-echo ">>> 安装完成 🎉"
+echo "[INFO] 安装完成 🎉"
