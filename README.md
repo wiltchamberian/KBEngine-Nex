@@ -75,6 +75,7 @@ KBEngine Nex 是在KBEngine 2.5.12 的基础上社区继续维护的版本
 | Deepin  | 25.0.1 AMD64     | g++ 12.3.0 <br> OpenSSL 3.2.4   | Nex 2.6.3 |
 | CentOS  | Stream-10-20250908.0-x86_64  | g++ 14.3.1 <br> OpenSSL 3.5.2   | Nex 2.6.3 |
 | CentOS  | 8.5.2111-x86_64   | g++ 8.5.0 <br> OpenSSL 1.1.1k   | Nex 2.6.3 |
+| Debian  | 13.1.0-amd64   | g++ 14.2.0 <br> OpenSSL 3.5.1   | Nex 2.6.3 |
 | Windows | 专业版 22621.4317 | msbuild <br> openssl1.0.x | Nex 2.6.3 |
 
 ---
