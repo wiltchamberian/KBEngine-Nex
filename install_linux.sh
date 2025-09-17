@@ -82,7 +82,7 @@ install_dep() {
 
 # 检测是否为 CentOS / RHEL / Fedora
 is_centos() {
-    [[ -f /etc/os-release ]] && grep -qiE 'centos|rhel|fedora' /etc/os-release
+    [ -f /etc/os-release ] && grep -qiE 'centos\|rhel\|fedora' /etc/os-release
 }
 
 # =========================================
@@ -144,6 +144,9 @@ install_dep "OpenSSL"  false libssl-dev openssl-devel openssl-dev
 install_dep "Zlib"  false zlib1g-dev zlib-devel zlib-dev
 install_dep "CURL Dev"  false libcurl4-openssl-dev libcurl-devel curl-dev
 
+if $PKG_CHECK "libmariadb-dev" >/dev/null 2>&1; then
+    install_dep "libmariadb-dev-compat"  true libmariadb-dev-compat
+fi
 
 
 if is_centos; then
