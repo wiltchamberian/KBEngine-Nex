@@ -174,14 +174,55 @@ if not exist "%VCPKG_PATH%\downloads\tools\powershell-core-7.2.24-windows" (
 
 
 
-
-
-
 echo [找到] vcpkg 路径: %VCPKG_EXE%
 echo [执行] vcpkg integrate install ...
 "%VCPKG_EXE%" integrate install
 
 
+
+
+@REM 安装python依赖
+set "EXTERNALS_DIR=%PROJECT_ROOT%\kbe\src\lib\python\externals"
+set "NUGET_EXE=%EXTERNALS_DIR%\nuget.exe"
+set "CLONE_DIR=%~dp0\python-externals"
+set "PYTHON_VERSION=3_13_5"
+
+if exist "%NUGET_EXE%" (
+    echo [INFO] 检测到 nuget.exe 已存在，跳过 externals 初始化。
+) else (
+    echo [INFO] nuget.exe 不存在，准备重新拉取 externals...
+
+    if exist "%EXTERNALS_DIR%" (
+        echo [INFO] 删除旧 externals 文件夹...
+        rmdir /s /q "%EXTERNALS_DIR%"
+    )
+
+    if exist "%CLONE_DIR%" (
+        @REM 更新已有的仓库
+        git -C "%CLONE_DIR%" reset --hard HEAD
+        git -C "%CLONE_DIR%" pull
+    ) else (
+        echo [INFO] 从 gitee 拉取 python-externals...
+        git clone https://gitee.com/KBEngineLab/python-externals.git "%CLONE_DIR%"
+        if errorlevel 1 (
+            echo [ERROR] git clone 失败！
+            exit /b 1
+        )
+    )
+    
+
+    echo [INFO] 复制 %PYTHON_VERSION% 到 externals...
+    xcopy /e /i /y "%CLONE_DIR%\%PYTHON_VERSION%" "%EXTERNALS_DIR%"
+    if errorlevel 1 (
+        echo [ERROR] 复制 externals 失败！
+        exit /b 1
+    )
+
+    echo [INFO] 删除临时目录 python-externals...
+    rmdir /s /q "%CLONE_DIR%"
+
+    echo [INFO] externals 初始化完成。
+)
 
 
 
