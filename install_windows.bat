@@ -223,8 +223,15 @@ echo %MSVC_FULL_PATH%
 echo %VCVARS_VAR%
 echo %MSVC_VER_VAR%
 
+:: 提取前两段版本号，例如 14.44
+for /f "tokens=1,2 delims=." %%a in ("%MSVC_VER%") do (
+    set "VC_VER=%%a.%%b"
+)
+
+echo VC_VER: %VC_VER%
+
 set "VCVARSALL_BAT=%VS_INSTALL_PATH%\VC\Auxiliary\Build\vcvarsall.bat"
-call "%VCVARSALL_BAT%" x64 -vcvars_ver=14.38
+call "%VCVARSALL_BAT%" x64 -vcvars_ver=%VC_VER%
 if errorlevel 1 (
     echo [错误] 无法加载 Visual Studio 编译环境
     pause
@@ -250,7 +257,7 @@ echo.
 echo [步骤 1] 编译 KBEMain.vcxproj ...
 msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=%PLATFORM% /m    ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
-    /consoleloggerparameters:ForceConsoleColor 
+    /consoleloggerparameters:DisableConsoleColor 
 if errorlevel 1 (
     echo [错误] KBEMain.vcxproj 编译失败，请检查 %LOG_FILE%
     pause
@@ -269,7 +276,7 @@ echo.
 echo [步骤 2] 编译 kbengine nex.sln ...
 msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
-    /consoleloggerparameters:ForceConsoleColor
+    /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
     echo [错误] kbengine nex.sln 编译失败，请检查 %LOG_FILE%
     pause
@@ -288,7 +295,7 @@ echo.
 echo [步骤 2] 安装 GUICONSOLE
 msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
-    /consoleloggerparameters:ForceConsoleColor
+    /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
     echo [错误] guiconsole.sln 编译失败，请检查 %LOG_FILE%
     pause
