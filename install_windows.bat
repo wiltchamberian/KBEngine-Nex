@@ -169,25 +169,59 @@ if %MSVC_COUNT%==0 (
         call echo   %%i:!MSVC_VER_%%i!
     )
 
-    echo.
-    echo +------------------------------------------------------------------------------------------------------+
-    echo ^| [Note] Choose the version compatible with vcpkg, usually the latest
-    echo ^| [Note] If unsure, check KBEMain build logs for the compiler path, e.g.:
-    echo ^|        Compiler found: E:/vs/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
-    echo ^| [Note] The version used by vcpkg is 14.44.35207
-    echo ^| [Note] Or remove extra toolsets and keep only one
-    echo +------------------------------------------------------------------------------------------------------+
-    echo.
+    set "LATEST_VER=0.0.0"
+    for /l %%i in (1,1,%MSVC_COUNT%) do (
+        set "CUR=!MSVC_VER_%%i!"
 
+        for /f "tokens=1-3 delims=." %%a in ("!CUR!") do (
+            set /a CUR_MAJOR=%%a
+            set /a CUR_MINOR=%%b
+            set /a CUR_PATCH=%%c
+        )
+        for /f "tokens=1-3 delims=." %%a in ("!LATEST_VER!") do (
+            set /a L_MAJOR=%%a
+            set /a L_MINOR=%%b
+            set /a L_PATCH=%%c
+        )
 
-    set /p "CHOICE=Please select the MSVC toolset number (1-%MSVC_COUNT%): "
-    if "!CHOICE!"=="" set "CHOICE=1"
-    if !CHOICE! GTR !MSVC_COUNT! (
-        echo [Error] Invalid input!
-        exit /b 1
+        if !CUR_MAJOR! gtr !L_MAJOR! (
+            set "LATEST_VER=!CUR!"
+        ) else if !CUR_MAJOR! equ !L_MAJOR! (
+            if !CUR_MINOR! gtr !L_MINOR! (
+                set "LATEST_VER=!CUR!"
+            ) else if !CUR_MINOR! equ !L_MINOR! (
+                if !CUR_PATCH! gtr !L_PATCH! (
+                    set "LATEST_VER=!CUR!"
+                )
+            )
+        )
     )
 
-    call set "MSVC_VER=%%MSVC_VER_!CHOICE!%%"
+
+    echo.
+    echo Latest MSVC version is !LATEST_VER!
+
+    @REM echo.
+    @REM echo +------------------------------------------------------------------------------------------------------+
+    @REM echo ^| [Note] Choose the version compatible with vcpkg, usually the latest
+    @REM echo ^| [Note] If unsure, check KBEMain build logs for the compiler path, e.g.:
+    @REM echo ^|        Compiler found: E:/vs/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+    @REM echo ^| [Note] The version used by vcpkg is 14.44.35207
+    @REM echo ^| [Note] Or remove extra toolsets and keep only one
+    @REM echo +------------------------------------------------------------------------------------------------------+
+    @REM echo.
+
+
+    @REM set /p "CHOICE=Please select the MSVC toolset number (1-%MSVC_COUNT%): "
+    @REM if "!CHOICE!"=="" set "CHOICE=1"
+    @REM if !CHOICE! GTR !MSVC_COUNT! (
+    @REM     echo [Error] Invalid input!
+    @REM     exit /b 1
+    @REM )
+    
+    @REM call set "MSVC_VER=%%MSVC_VER_!CHOICE!%%"
+
+    set "MSVC_VER=!LATEST_VER!"
     echo [Selected] Using MSVC toolset version: !MSVC_VER!
 
     set "MSVC_FULL_PATH=%MSVC_ROOT%\!MSVC_VER!"
@@ -199,15 +233,16 @@ echo %MSVC_FULL_PATH%
 echo %VCVARS_VAR%
 echo %MSVC_VER_VAR%
 
-:: Extract first two version segments, e.g., 14.44
-for /f "tokens=1,2 delims=." %%a in ("%MSVC_VER%") do (
-    set "VC_VER=%%a.%%b"
-)
 
-echo VC_VER: %VC_VER%
+:: Extract first two version segments, e.g., 14.44
+@REM for /f "tokens=1,2 delims=." %%a in ("%MSVC_VER%") do (
+@REM     set "VC_VER=%%a.%%b"
+@REM )
+
+echo VC_VER: %MSVC_VER%
 
 set "VCVARSALL_BAT=%VS_INSTALL_PATH%\VC\Auxiliary\Build\vcvarsall.bat"
-call "%VCVARSALL_BAT%" x64 -vcvars_ver=%VC_VER%
+call "%VCVARSALL_BAT%" x64 -vcvars_ver=%MSVC_VER%
 if errorlevel 1 (
     echo [Error] Cannot load Visual Studio build environment
     pause
