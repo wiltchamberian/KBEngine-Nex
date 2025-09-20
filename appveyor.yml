@@ -10,7 +10,8 @@ os:
 
 environment:
   matrix:
-  - TOOLSET: vs2022
+    - TOOLSET: vs2022
 
-build:
-  project: kbe/src/kbengine nex.sln
+# 自定义构建步骤
+build_script:
+  - cmd: call install_windows.bat
