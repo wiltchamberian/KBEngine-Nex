@@ -109,22 +109,18 @@ if defined VCPKG_PATH (
     REM 3) 如果没有，提示并安装到默认目录
     echo.
     echo [提示] 未检测到 kbe-vcpkg-gitee
-    set /p "choice=是否自动下载安装 vcpkg 到 %USERPROFILE%\AppData\Local\kbe-vcpkg-gitee? (y/n): "
-    if /i "!choice!"=="y" (
-        echo [下载] 开始下载安装 vcpkg...
-        set "VCPKG_PATH=%USERPROFILE%\AppData\Local\kbe-vcpkg-gitee"
-        echo VCPKG_PATH=!VCPKG_PATH!
-        git clone https://gitee.com/KBEngineLab/kbe-vcpkg-gitee.git "!VCPKG_PATH!"
-        if errorlevel 1 (
-            echo [错误] vcpkg 下载失败
-            exit /b 1
-        )
-        set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
-        call "!VCPKG_PATH!\bootstrap-vcpkg.bat"
-    ) else (
-        echo [退出] 用户取消安装 vcpkg
+    
+    echo [下载] 开始下载安装 vcpkg...
+    set "VCPKG_PATH=%USERPROFILE%\AppData\Local\kbe-vcpkg-gitee"
+    echo VCPKG_PATH=!VCPKG_PATH!
+    git clone https://gitee.com/KBEngineLab/kbe-vcpkg-gitee.git "!VCPKG_PATH!"
+    if errorlevel 1 (
+        echo [错误] vcpkg 下载失败
         exit /b 1
     )
+    set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
+    call "!VCPKG_PATH!\bootstrap-vcpkg.bat"
+
 )
 
 

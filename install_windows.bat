@@ -2,36 +2,30 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-
-
 REM =========================================
-REM 检查 GitHub 网络可访问性 (Git clone 测试)
+REM Check GitHub network accessibility (Git clone test)
 REM =========================================
-echo [检测] 尝试访问 GitHub ...
+echo [Checking] Trying to access GitHub ...
 set "TMP_TEST_DIR=%TEMP%\gh_test"
 if exist "%TMP_TEST_DIR%" rd /s /q "%TMP_TEST_DIR%"
 mkdir "%TMP_TEST_DIR%"
 
 git ls-remote https://github.com/microsoft/vcpkg.git >nul 2>nul
 if errorlevel 1 (
-    echo [错误] 无法访问 GitHub 仓库！
-    echo        可能是网络问题或需要代理，请自行解决网络问题后再运行脚本。
+    echo [Error] Cannot access GitHub repository!
+    echo         There may be a network issue or proxy required. Please resolve network issues before running the script.
     echo.
-    echo        同时也通过国内 Gitee 镜像，请尝试运行 gitee\install_windows.bat。
+    echo         There is also a domestic Gitee mirror. You can try running gitee\install_windows.bat.
     rd /s /q "%TMP_TEST_DIR%" >nul 2>nul
     pause
     exit /b 1
 )
 
 rd /s /q "%TMP_TEST_DIR%" >nul 2>nul
-echo [成功] GitHub 仓库可访问
-
-
-
-
+echo [Success] GitHub repository is accessible
 
 REM =========================================
-REM 默认参数
+REM Default parameters
 REM =========================================
 set "CONFIG=Debug"
 set "PLATFORM=x64"
@@ -43,7 +37,7 @@ set "LOG_FILE=%PROJECT_ROOT%build.log"
 set "VCPKG_PATH="
 
 REM =========================================
-REM 解析参数
+REM Parse parameters
 REM =========================================
 if "%~1"=="" (
     set "CONFIG=Debug"
@@ -54,101 +48,84 @@ if "%~1"=="" (
 ) else if /i "%~1"=="help" (
     goto showHelp
 ) else (
-    echo [错误] 无效的 CONFIG 参数: %~1
+    echo [Error] Invalid CONFIG parameter: %~1
     exit /b 1
 )
 
 if not "%~2"=="" (
     set "VCPKG_PATH=%~2"
     if not exist "%VCPKG_PATH%\vcpkg.exe" (
-        echo [错误] vcpkgPath 指定的路径无效: %VCPKG_PATH%
+        echo [Error] The specified vcpkg path is invalid: %VCPKG_PATH%
         exit /b 1
     )
 )
 
 :showHelp
 echo =========================================
-echo 使用说明:
+echo Usage:
 echo   build.bat [CONFIG] [VCPKGPATH]
 echo.
-echo 可用参数:
-echo   CONFIG=Debug^|Release      指定编译配置，默认 Debug
-echo   VCPKGPATH=路径            指定 vcpkg 安装路径
-echo   GUICONSOLE            安装 GUICONSOLE
+echo Available parameters:
+echo   CONFIG=Debug^|Release      Specify build configuration, default is Debug
+echo   VCPKGPATH=Path             Specify vcpkg installation path
+echo   GUICONSOLE                 Install GUICONSOLE
 echo =========================================
 echo.
 if "%~1"=="help" exit /b 0
 
-
-
-
-
-
-
 REM =========================================
-REM 1. 检测 vcpkg (修改版)
+REM 1. Check vcpkg (modified)
 REM =========================================
 echo.
-echo [检测] 正在查找 vcpkg...
+echo [Checking] Searching for vcpkg...
 
 set "VCPKG_EXE="
 
-REM 1) 优先使用传入参数
+REM 1) Use parameter if provided
 if defined VCPKG_PATH (
     set "VCPKG_EXE=%VCPKG_PATH%\vcpkg.exe"
     if not exist "%VCPKG_EXE%" (
-        echo [错误] vcpkgPath 指定的路径无效: %VCPKG_PATH%
+        echo [Error] The specified vcpkg path is invalid: %VCPKG_PATH%
         exit /b 1
     )
 ) else (
-    REM 2) 在常用安装目录中查找 kbe-vcpkg
+    REM 2) Search default installation directory
     if exist "%USERPROFILE%\AppData\Local\kbe-vcpkg\vcpkg.exe" (
         set "VCPKG_EXE=%USERPROFILE%\AppData\Local\kbe-vcpkg\vcpkg.exe"
         set "VCPKG_PATH=%USERPROFILE%\AppData\Local\kbe-vcpkg"
         goto :found_vcpkg
     )
 
-    REM 3) 如果没有，提示并安装到默认目录
+    REM 3) Not found, prompt and install to default directory
     echo.
-    echo [提示] 未检测到 kbe-vcpkg
-    set /p "choice=是否自动下载安装 vcpkg 到 %USERPROFILE%\AppData\Local\kbe-vcpkg? (y/n): "
-    if /i "!choice!"=="y" (
-        echo [下载] 开始下载安装 vcpkg...
-        set "VCPKG_PATH=%USERPROFILE%\AppData\Local\kbe-vcpkg"
-        echo VCPKG_PATH=!VCPKG_PATH!
-        git clone https://github.com/microsoft/vcpkg "!VCPKG_PATH!"
-        if errorlevel 1 (
-            echo [错误] vcpkg 下载失败
-            exit /b 1
-        )
-        set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
-        call "!VCPKG_PATH!\bootstrap-vcpkg.bat"
-    ) else (
-        echo [退出] 用户取消安装 vcpkg
+    echo [Notice] kbe-vcpkg not detected
+    
+    echo [Downloading] Start downloading and installing vcpkg...
+    set "VCPKG_PATH=%USERPROFILE%\AppData\Local\kbe-vcpkg"
+    echo VCPKG_PATH=!VCPKG_PATH!
+    git clone https://github.com/microsoft/vcpkg "!VCPKG_PATH!"
+    if errorlevel 1 (
+        echo [Error] vcpkg download failed
         exit /b 1
     )
+    set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
+    call "!VCPKG_PATH!\bootstrap-vcpkg.bat"
 )
 
 :found_vcpkg
-echo [找到] vcpkg 路径: %VCPKG_EXE%
-echo [执行] vcpkg integrate install ...
+echo [Found] vcpkg path: %VCPKG_EXE%
+echo [Executing] vcpkg integrate install ...
 "%VCPKG_EXE%" integrate install
 
-
-
-
-
-
-
 REM =========================================
-REM 2. 查找 VS 安装路径和所有 MSVC 工具集
+REM 2. Find Visual Studio installation path and all MSVC toolsets
 REM =========================================
 echo.
-echo [检测] 正在查找 Visual Studio 安装路径...
+echo [Checking] Searching for Visual Studio installation path...
 
 set "VSWHERE_PATH=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
 if not exist "%VSWHERE_PATH%" (
-    echo [错误] 未找到 vswhere.exe，请确认已安装 Visual Studio 或 Build Tools
+    echo [Error] vswhere.exe not found. Please ensure Visual Studio or Build Tools is installed.
     pause
     exit /b 1
 )
@@ -159,15 +136,15 @@ for /f "usebackq tokens=*" %%i in (`"%VSWHERE_PATH%" -latest -requires Microsoft
 )
 
 if not defined VS_INSTALL_PATH (
-    echo [错误] 未找到安装了 C++ 工具集的 Visual Studio
+    echo [Error] No Visual Studio with C++ toolset found
     pause
     exit /b 1
 )
 
-echo [找到] Visual Studio 路径: %VS_INSTALL_PATH%
+echo [Found] Visual Studio path: %VS_INSTALL_PATH%
 set "MSVC_ROOT=%VS_INSTALL_PATH%\VC\Tools\MSVC"
 
-REM 列出所有 MSVC 工具集版本
+REM List all MSVC toolset versions
 set "MSVC_COUNT=0"
 set "VCVARS_VAR="
 set "MSVC_VER_VAR="
@@ -178,54 +155,51 @@ for /d %%v in ("%MSVC_ROOT%\*") do (
 
 echo.
 if %MSVC_COUNT%==0 (
-    echo [warning] 未找到任何 MSVC 工具集，使用默认工具集
+    echo [Warning] No MSVC toolset found, using default
 ) else if %MSVC_COUNT%==1 (
     set "MSVC_VER=!MSVC_VER_1!"
-    echo [选择] 使用 MSVC 工具集版本: !MSVC_VER!
+    echo [Selected] Using MSVC toolset version: !MSVC_VER!
 
-    
     set "MSVC_FULL_PATH=%MSVC_ROOT%\!MSVC_VER!"
     set "VCVARS_VAR=-vcvars_ver=!MSVC_VER!"
     set "MSVC_VER_VAR=-p:VCToolsVersion=!MSVC_VER!"
-
 ) else (
-    echo 找到以下 MSVC 工具集版本:
+    echo Found the following MSVC toolset versions:
     for /l %%i in (1,1,%MSVC_COUNT%) do (
         call echo   %%i:!MSVC_VER_%%i!
     )
 
     echo.
-    echo [31m注意：请选择与vcpkg匹配的版本，否则可能导致编译失败，一般是最新版[0m
+    echo +------------------------------------------------------------------------------------------------------+
+    echo ^| [Note] Choose the version compatible with vcpkg, usually the latest
+    echo ^| [Note] If unsure, check KBEMain build logs for the compiler path, e.g.:
+    echo ^|        Compiler found: E:/vs/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe
+    echo ^| [Note] The version used by vcpkg is 14.44.35207
+    echo ^| [Note] Or remove extra toolsets and keep only one
+    echo +------------------------------------------------------------------------------------------------------+
     echo.
-    echo [31m如无法确定版本，请注意后续KBEMain方案编译时日志输出：例如： Compiler found: E:/ProgramFiles/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/cl.exe[0m
-    echo.
-    echo [31m其中14.44.35207就是vcpkg所使用的版本[0m
-    echo.
-    echo [31m或删除多余的程序集，保留一个即可[0m
-    echo.
-    
-    set /p "CHOICE=请选择要使用的 MSVC 工具集编号 (1-%MSVC_COUNT%): "
+
+
+    set /p "CHOICE=Please select the MSVC toolset number (1-%MSVC_COUNT%): "
     if "!CHOICE!"=="" set "CHOICE=1"
     if !CHOICE! GTR !MSVC_COUNT! (
-        echo [错误] 输入无效！
+        echo [Error] Invalid input!
         exit /b 1
     )
 
     call set "MSVC_VER=%%MSVC_VER_!CHOICE!%%"
-    echo [选择] 使用 MSVC 工具集版本: !MSVC_VER!
-
+    echo [Selected] Using MSVC toolset version: !MSVC_VER!
 
     set "MSVC_FULL_PATH=%MSVC_ROOT%\!MSVC_VER!"
     set "VCVARS_VAR=-vcvars_ver=!MSVC_VER!"
     set "MSVC_VER_VAR=-p:VCToolsVersion=!MSVC_VER!"
 )
 
-
 echo %MSVC_FULL_PATH%
 echo %VCVARS_VAR%
 echo %MSVC_VER_VAR%
 
-:: 提取前两段版本号，例如 14.44
+:: Extract first two version segments, e.g., 14.44
 for /f "tokens=1,2 delims=." %%a in ("%MSVC_VER%") do (
     set "VC_VER=%%a.%%b"
 )
@@ -235,76 +209,68 @@ echo VC_VER: %VC_VER%
 set "VCVARSALL_BAT=%VS_INSTALL_PATH%\VC\Auxiliary\Build\vcvarsall.bat"
 call "%VCVARSALL_BAT%" x64 -vcvars_ver=%VC_VER%
 if errorlevel 1 (
-    echo [错误] 无法加载 Visual Studio 编译环境
+    echo [Error] Cannot load Visual Studio build environment
     pause
     exit /b 1
 )
-
 
 echo cl.exe path: %PATH%
 cl
 
-
-
 REM =========================================
-REM 3. 编译工程
+REM 3. Build projects
 REM =========================================
 echo.
-echo KBEngine-Nex 构建脚本
-echo 项目路径: %PROJECT_ROOT%
-echo 编译配置: %CONFIG% ^| 平台: %PLATFORM%
-echo 日志文件: %LOG_FILE%
+echo KBEngine-Nex Build Script
+echo Project path: %PROJECT_ROOT%
+echo Build configuration: %CONFIG% ^| Platform: %PLATFORM%
+echo Log file: %LOG_FILE%
 echo.
 
-echo [步骤 1] 编译 KBEMain.vcxproj ...
+echo [Step 1] Building KBEMain.vcxproj ...
 msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=%PLATFORM% /m    ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor 
 if errorlevel 1 (
-    echo [错误] KBEMain.vcxproj 编译失败，请检查 %LOG_FILE%
+    echo [Error] KBEMain.vcxproj build failed. Check %LOG_FILE%
     pause
     exit /b 1
 )
 
-
 if "%~3"=="GUICONSOLE" (
-    echo [安装] 正在安装 GUICONSOLE...
+    echo [Installing] GUICONSOLE...
     goto GUICONSOLE
 )
 
-
-@REM /p:VCToolsVersion=%MSVC_VER%
 echo.
-echo [步骤 2] 编译 kbengine nex.sln ...
+echo [Step 2] Building kbengine nex.sln ...
 msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
-    echo [错误] kbengine nex.sln 编译失败，请检查 %LOG_FILE%
+    echo [Error] kbengine nex.sln build failed. Check %LOG_FILE%
     pause
     exit /b 1
 )
 
 echo.
-echo [成功] 全部编译完成！
+echo [Success] All builds completed!
 pause
 exit /b 0
 
-
-
 :GUICONSOLE
 echo.
-echo [步骤 2] 安装 GUICONSOLE
+echo [Step 2] Installing GUICONSOLE
 msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
-    echo [错误] guiconsole.sln 编译失败，请检查 %LOG_FILE%
+    echo [Error] guiconsole.sln build failed. Check %LOG_FILE%
     pause
     exit /b 1
 )
 
 echo.
-echo [成功] 全部编译完成！
+echo [Success] All builds completed!
 pause
 exit /b 0

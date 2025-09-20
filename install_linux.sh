@@ -3,7 +3,7 @@ set -e
 
 
 # =========================================
-# 发行版检测与包管理器选择
+# Detect distribution and select package manager
 # =========================================
 UPDATED=0
 
@@ -32,14 +32,14 @@ elif command -v apk >/dev/null 2>&1; then
     PKG_CHECK="apk info"
     PKG_UPDATE=""
 else
-    echo "[ERROR] 未知的包管理器，请手动安装依赖"
+    echo "[ERROR] Unknown package manager, please install dependencies manually"
     exit 1
 fi
 
 update_pkg_index() {
     if [ "$UPDATED" -eq 0 ]; then
         if [ -n "$PKG_UPDATE" ]; then
-            echo "[INFO] 更新软件源..."
+            echo "[INFO] Updating package index..."
             $PKG_UPDATE || true
         fi
         UPDATED=1
@@ -56,21 +56,21 @@ install_dep() {
     IGNORE_FAIL="$2"
     shift 2
     for PKG in "$@"; do
-        # 检查是否已安装
+        # Check if installed
         if $PKG_CHECK "$PKG" >/dev/null 2>&1; then
-            echo "[INFO] $NAME 已安装 ($PKG)"
+            echo "[INFO] $NAME is already installed ($PKG)"
             return 0
         fi
     done
-    # 尝试安装候选包
+    # Try to install candidate packages
     for PKG in "$@"; do
-        echo "[INFO] 尝试安装 $NAME ($PKG)"
+        echo "[INFO] Trying to install $NAME ($PKG)"
         if $INSTALL_CMD "$PKG" >/dev/null 2>&1; then
-            echo "[INFO] 安装成功: $PKG"
+            echo "[INFO] Installed successfully: $PKG"
             return 0
         fi
     done
-    echo "[WARN] 未能安装 $NAME，请手动安装 (候选: $*)"
+    echo "[WARN] Failed to install $NAME, please install manually (candidates: $*)"
     if [ "$IGNORE_FAIL" = true ]; then
         return 0
     else
@@ -80,19 +80,19 @@ install_dep() {
 
 
 
-# 检测是否为 CentOS / RHEL / Fedora
+# Check if system is CentOS / RHEL / Fedora
 is_centos() {
     [ -f /etc/os-release ] && grep -qiE 'centos\|rhel\|fedora' /etc/os-release
 }
 
 # =========================================
-# 构建类型
+# Build type
 # =========================================
 KBE_CONFIG=${1:-Release}
-echo "[INFO] 使用构建类型: $KBE_CONFIG"
+echo "[INFO] Using build type: $KBE_CONFIG"
 
 # =========================================
-# 基础工具
+# Basic tools
 # =========================================
 install_dep "Git" false git
 install_dep "GCC" false gcc
@@ -108,7 +108,7 @@ install_dep "zip" false zip
 install_dep "unzip" false unzip
 install_dep "tar" false tar
 
-# 安装 Build Tools，只在非 CentOS 系列执行
+# Install Build Tools only on non-CentOS systems
 if ! is_centos; then
     install_dep "Build Tools"  false build-essential "@development-tools" base-devel
 else
@@ -118,15 +118,15 @@ fi
 
 
 # =========================================
-# 额外依赖
+# Extra dependencies
 # =========================================
 
 if is_centos; then
-    # 安装 dnf-plugins-core
+    # Install dnf-plugins-core
     install_dep "dnf-plugins-core" true dnf-plugins-core 
     sudo dnf config-manager --set-enabled crb  || true
 else
-    echo "[INFO] 非 CentOS/RHEL/Fedora 系统，跳过 dnf-plugins-core 安装"
+    echo "[INFO] Non-CentOS/RHEL/Fedora system, skipping dnf-plugins-core installation"
 fi
 
 
@@ -150,41 +150,41 @@ fi
 
 
 if is_centos; then
-    # 安装 Perl
+    # Install Perl
     install_dep "perl" false perl
     install_dep "perl-core" false perl-core
     install_dep "perl-IPC-Cmd" false perl-IPC-Cmd
     install_dep "perl-FindBin" true perl-FindBin
 else
-    echo "[INFO] 非 CentOS/RHEL/Fedora 系统，跳过 perl安装"
+    echo "[INFO] Non-CentOS/RHEL/Fedora system, skipping Perl installation"
 fi
 
 # =========================================
-# GitHub 可访问性检查
+# Check GitHub accessibility
 # =========================================
-echo "[检测] 尝试访问 GitHub 仓库..."
+echo "[CHECK] Trying to access GitHub repository..."
 if ! command -v git >/dev/null 2>&1; then
-    echo "[WARN] 未安装 git，稍后会自动安装"
+    echo "[WARN] Git is not installed, will install later"
 fi
 
 if ! git ls-remote https://github.com/microsoft/vcpkg.git >/dev/null 2>&1; then
-    echo "[ERROR] 无法访问 GitHub 仓库，请确保网络或代理可用"
-    echo "[INFO] 同时也通过国内 Gitee 镜像，请尝试运行 gitee\install_linux.sh。"
+    echo "[ERROR] Cannot access GitHub repository, please check network or proxy"
+    echo "[INFO] You can also use the domestic Gitee mirror, try running gitee/install_linux.sh."
     exit 1
 fi
-echo "[成功] GitHub 仓库可访问"
+echo "[SUCCESS] GitHub repository is accessible"
 
 
 
 # =========================================
-# vcpkg 安装
+# Install vcpkg
 # =========================================
 VCPKG_DIR="$HOME/kbe-vcpkg"
 if [ ! -d "$VCPKG_DIR" ] || [ ! -f "$VCPKG_DIR/bootstrap-vcpkg.sh" ]; then
-    echo "[INFO] 克隆 vcpkg"
+    echo "[INFO] Cloning vcpkg"
     git clone https://github.com/microsoft/vcpkg.git "$VCPKG_DIR"
 else
-    echo "[INFO] vcpkg 已存在: $VCPKG_DIR"
+    echo "[INFO] vcpkg already exists: $VCPKG_DIR"
 fi
 
 OLDPWD=$(pwd)
@@ -193,17 +193,17 @@ cd "$VCPKG_DIR"
 cd "$OLDPWD"
 
 # =========================================
-# 构建 KBEngine-Nex
+# Build KBEngine-Nex
 # =========================================
-echo "[INFO] 进入 ./kbe/src/"
+echo "[INFO] Entering ./kbe/src/"
 cd "./kbe/src/"
 
-echo "[INFO] 配置 CMake"
+echo "[INFO] Configuring CMake"
 cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE="$VCPKG_DIR/scripts/buildsystems/vcpkg.cmake" \
     -DKBE_CONFIG="$KBE_CONFIG"
 
-echo "[INFO] 开始编译 KBEngine-Nex"
+echo "[INFO] Building KBEngine-Nex"
 cmake --build build -j"$(nproc)"
 
-echo "[INFO] 安装完成 🎉"
+echo "[INFO] Installation complete 🎉"
