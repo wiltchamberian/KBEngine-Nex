@@ -6,8 +6,8 @@ branches:
     - appveyor
 
 os:
-  - Ubuntu2204
-  # - Visual Studio 2022
+  - Visual Studio 2022
+  # - Ubuntu2204 #Build execution time has reached the maximum allowed time for your plan (60 minutes).
 
 environment:
   matrix:
