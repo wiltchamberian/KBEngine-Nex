@@ -248,8 +248,24 @@ if not defined VS_INSTALL_PATH (
     exit /b 1
 )
 
+
 echo [找到] Visual Studio 路径: %VS_INSTALL_PATH%
 set "MSVC_ROOT=%VS_INSTALL_PATH%\VC\Tools\MSVC"
+
+
+for /f "delims=" %%i in ('"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property catalog_productLineVersion') do set VS_MAJOR=%%i
+
+set "PLATFORM_TOOLSET="
+
+if "%VS_MAJOR%"=="2015" set "PLATFORM_TOOLSET=-p:PlatformToolset=v140"
+if "%VS_MAJOR%"=="2017" set "PLATFORM_TOOLSET=-p:PlatformToolset=v141"
+if "%VS_MAJOR%"=="2019" set "PLATFORM_TOOLSET=-p:PlatformToolset=v142"
+if "%VS_MAJOR%"=="2022" set "PLATFORM_TOOLSET=-p:PlatformToolset=v143"
+
+
+echo VS_MAJOR: %VS_MAJOR%
+echo PLATFORM_TOOLSET: %PLATFORM_TOOLSET%
+
 
 REM 列出所有 MSVC 工具集版本
 set "MSVC_COUNT=0"
@@ -379,7 +395,7 @@ echo 日志文件: %LOG_FILE%
 echo.
 
 echo [步骤 1] 编译 KBEMain.vcxproj ...
-msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=%PLATFORM% /m    ^
+msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% %PLATFORM_TOOLSET%  /p:Platform=%PLATFORM% /m    ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor 
 if errorlevel 1 (
@@ -398,7 +414,7 @@ if "%~3"=="GUICONSOLE" (
 @REM /p:VCToolsVersion=%MSVC_VER%
 echo.
 echo [步骤 2] 编译 kbengine nex.sln ...
-msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
+msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% %PLATFORM_TOOLSET%  /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
@@ -417,7 +433,7 @@ exit /b 0
 :GUICONSOLE
 echo.
 echo [步骤 2] 安装 GUICONSOLE
-msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
+msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% %PLATFORM_TOOLSET%  /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (

@@ -139,6 +139,8 @@ for /f "usebackq tokens=*" %%i in (`"%VSWHERE_PATH%" -latest -requires Microsoft
     set "VS_INSTALL_PATH=%%i"
 )
 
+
+
 if not defined VS_INSTALL_PATH (
     echo [Error] No Visual Studio with C++ toolset found
     if not defined CI (
@@ -149,6 +151,23 @@ if not defined VS_INSTALL_PATH (
 
 echo [Found] Visual Studio path: %VS_INSTALL_PATH%
 set "MSVC_ROOT=%VS_INSTALL_PATH%\VC\Tools\MSVC"
+
+
+
+for /f "delims=" %%i in ('"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property catalog_productLineVersion') do set VS_MAJOR=%%i
+
+set "PLATFORM_TOOLSET="
+
+if "%VS_MAJOR%"=="2015" set "PLATFORM_TOOLSET=-p:PlatformToolset=v140"
+if "%VS_MAJOR%"=="2017" set "PLATFORM_TOOLSET=-p:PlatformToolset=v141"
+if "%VS_MAJOR%"=="2019" set "PLATFORM_TOOLSET=-p:PlatformToolset=v142"
+if "%VS_MAJOR%"=="2022" set "PLATFORM_TOOLSET=-p:PlatformToolset=v143"
+
+
+echo VS_MAJOR: %VS_MAJOR%
+echo PLATFORM_TOOLSET: %PLATFORM_TOOLSET%
+
+
 
 REM List all MSVC toolset versions
 set "MSVC_COUNT=0"
@@ -260,6 +279,8 @@ if errorlevel 1 (
 echo cl.exe path: %PATH%
 cl
 
+
+
 REM =========================================
 REM 3. Build projects
 REM =========================================
@@ -271,7 +292,7 @@ echo Log file: %LOG_FILE%
 echo.
 
 echo [Step 1] Building KBEMain.vcxproj ...
-msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=%PLATFORM% /m    ^
+msbuild "%INIT_BUILD_PROJ%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% %PLATFORM_TOOLSET% /p:Platform=%PLATFORM% /m    ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor 
 if errorlevel 1 (
@@ -289,7 +310,7 @@ if "%~3"=="GUICONSOLE" (
 
 echo.
 echo [Step 2] Building kbengine nex.sln ...
-msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
+msbuild "%SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR%  %PLATFORM_TOOLSET% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
@@ -310,7 +331,7 @@ exit /b 0
 :GUICONSOLE
 echo.
 echo [Step 2] Installing GUICONSOLE
-msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR% /p:Platform=Win64 /m   ^
+msbuild "%GUICONSOLE_SOLUTION_FILE%" /p:Configuration=%CONFIG% %MSVC_VER_VAR%  %PLATFORM_TOOLSET% /p:Platform=Win64 /m   ^
     /fileLogger /fileLoggerParameters:LogFile=%LOG_FILE%;Append;Encoding=UTF-8 ^
     /consoleloggerparameters:DisableConsoleColor
 if errorlevel 1 (
