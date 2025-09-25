@@ -58,8 +58,8 @@ if "%~1"=="" (
 
 if not "%~2"=="" (
     set "VCPKG_PATH=%~2"
-    if not exist "%VCPKG_PATH%\vcpkg.exe" (
-        echo [Error] Invalid vcpkgPath: %VCPKG_PATH%
+    if not exist "!VCPKG_PATH!\vcpkg.exe" (
+        echo [Error] Invalid vcpkgPath: !VCPKG_PATH!
         exit /b 1
     )
 )
@@ -91,9 +91,9 @@ set "VCPKG_EXE="
 
 REM 1) Use input parameter first
 if defined VCPKG_PATH (
-    set "VCPKG_EXE=%VCPKG_PATH%\vcpkg.exe"
-    if not exist "%VCPKG_EXE%" (
-        echo [Error] Invalid vcpkgPath: %VCPKG_PATH%
+    set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
+    if not exist "!VCPKG_EXE!" (
+        echo [Error] Invalid vcpkgPath: !VCPKG_PATH!
         exit /b 1
     )
 ) else (
@@ -133,12 +133,12 @@ git -C "%USERPROFILE%\AppData\Local\kbe-vcpkg-gitee" pull
 
 set "ARCH=%PROCESSOR_ARCHITECTURE%"
 
-if not exist "%VCPKG_PATH%\downloads\tools\powershell-core-7.2.24-windows" (
+if not exist "!VCPKG_PATH!\downloads\tools\powershell-core-7.2.24-windows" (
 
     if /i  not "%ARCH%"=="ARM64" (
 
         @REM Check if PowerShell-7.2.24-win-x64.7z exists under ./downloads/tools, if so, extract with 7z located at ./downloads/tools/7zip-25.01-windows/7z.exe
-        if not exist "%VCPKG_PATH%\downloads\tools\PowerShell-7.2.24-win-x64.7z" (
+        if not exist "!VCPKG_PATH!\downloads\tools\PowerShell-7.2.24-win-x64.7z" (
             echo [Download] PowerShell-7.2.24-win-x64.7z ...
             "%VCPKG_EXE%" download powershell
             if errorlevel 1 (
@@ -147,15 +147,15 @@ if not exist "%VCPKG_PATH%\downloads\tools\powershell-core-7.2.24-windows" (
             )
         )
 
-        if not exist "%VCPKG_PATH%\downloads\tools\powershell-core-7.2.24-windows" (
+        if not exist "!VCPKG_PATH!\downloads\tools\powershell-core-7.2.24-windows" (
             echo [Extract] PowerShell-7.2.24-win-x64 ...
-            "%VCPKG_PATH%\downloads\tools\7zip-25.01-windows\7z.exe" x "%VCPKG_PATH%\downloads\tools\PowerShell-7.2.24-win-x64.7z" -o"%VCPKG_PATH%\downloads\tools" -y
+            "!VCPKG_PATH!\downloads\tools\7zip-25.01-windows\7z.exe" x "!VCPKG_PATH!\downloads\tools\PowerShell-7.2.24-win-x64.7z" -o"!VCPKG_PATH!\downloads\tools" -y
             if errorlevel 1 (
                 echo [Error] PowerShell extraction failed
                 exit /b 1
             )
 
-            ren "%VCPKG_PATH%\downloads\tools\PowerShell-7.2.24-win-x64" "powershell-core-7.2.24-windows"
+            ren "!VCPKG_PATH!\downloads\tools\PowerShell-7.2.24-win-x64" "powershell-core-7.2.24-windows"
             if errorlevel 1 (
                 echo [Error] PowerShell rename failed
                 exit /b 1

@@ -54,10 +54,11 @@ if "%~1"=="" (
     exit /b 1
 )
 
+
 if not "%~2"=="" (
     set "VCPKG_PATH=%~2"
-    if not exist "%VCPKG_PATH%\vcpkg.exe" (
-        echo [Error] The specified vcpkg path is invalid: %VCPKG_PATH%
+    if not exist "!VCPKG_PATH!\vcpkg.exe" (
+        echo [Error] The specified vcpkg path is invalid: !VCPKG_PATH!
         exit /b 1
     )
 )
@@ -85,9 +86,9 @@ set "VCPKG_EXE="
 
 REM 1) Use parameter if provided
 if defined VCPKG_PATH (
-    set "VCPKG_EXE=%VCPKG_PATH%\vcpkg.exe"
-    if not exist "%VCPKG_EXE%" (
-        echo [Error] The specified vcpkg path is invalid: %VCPKG_PATH%
+    set "VCPKG_EXE=!VCPKG_PATH!\vcpkg.exe"
+    if not exist "!VCPKG_EXE!" (
+        echo [Error] The specified vcpkg path is invalid: !VCPKG_PATH!
         exit /b 1
     )
 ) else (
