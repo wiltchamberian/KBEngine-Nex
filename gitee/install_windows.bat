@@ -3,6 +3,20 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 
+REM =========================================
+REM Git
+REM =========================================
+
+git --version >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [Error] Git is not installed or not in PATH.
+    echo Please install Git from https://git-scm.com/downloads
+    exit /b 1
+) else (
+    echo [Success] Git is installed.
+)
+
+
 
 REM =========================================
 REM Check Gitee network accessibility (Git clone test)
