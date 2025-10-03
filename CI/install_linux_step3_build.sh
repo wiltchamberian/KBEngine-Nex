@@ -3,6 +3,6 @@ set -e
 
 cd ./kbe/src/
 echo "[INFO] Starting build..."
-cmake --build build -j"$(nproc)"
+cmake --build build -j2 VERBOSE=1
 
 echo "[INFO] Step 3 complete 🎉"
