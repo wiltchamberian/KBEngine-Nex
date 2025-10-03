@@ -25,10 +25,10 @@ build_script:
   # - cmd: if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2022" call install_windows.bat
 
   # Linux Step 1: 安装依赖
-  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash install_linux_step1_deps.sh; fi
+  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash ./CI/install_linux_step1_deps.sh; fi
 
   # Linux Step 2: vcpkg + CMake configure
-  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash install_linux_step2_configure.sh Release; fi
+  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash ./CI/install_linux_step2_configure.sh Release; fi
 
   # Linux Step 3: 编译
-  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash install_linux_step3_build.sh; fi
+  - sh: if [ "$APPVEYOR_BUILD_WORKER_IMAGE" = "Ubuntu2204" ]; then bash ./CI/install_linux_step3_build.sh; fi
