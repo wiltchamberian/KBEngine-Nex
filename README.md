@@ -29,29 +29,29 @@
 
 [点击查看插件使用文档](https://www.kbelab.com/kbex/)
 
-- [x] [**新建项目**](https://www.kbelab.com/kbex/create_project.md) 通过 Pycharm IDE 新建项目
+- [x] [**新建项目**](https://www.kbelab.com/kbex/create_project.html) 通过 Pycharm IDE 新建项目
 
-- [x] [**插件设置**](https://www.kbelab.com/kbex/settings.md) 配置项目相关信息
+- [x] [**插件设置**](https://www.kbelab.com/kbex/settings.html) 配置项目相关信息
 
-- [x] [**服务端管理**](https://www.kbelab.com/kbex/server.md) 在Pycharm中启动、停止、调试服务端
+- [x] [**服务端管理**](https://www.kbelab.com/kbex/server.html) 在Pycharm中启动、停止、调试服务端
 
-- [x] [**SDK生成**](https://www.kbelab.com/kbex/gensdk.md) 一键生成SDK
+- [x] [**SDK生成**](https://www.kbelab.com/kbex/gensdk.html) 一键生成SDK
 
-- [x] [**远程服务**](https://www.kbelab.com/kbex/settings.md#二、ssh-配置功能) 支持远程服务端，自动上传项目
+- [x] [**远程服务**](https://www.kbelab.com/kbex/settings.html#二、ssh-配置功能) 支持远程服务端，自动上传项目
 
-- [x] [**项目支持**](https://www.kbelab.com/kbex/create_project.md#_3-创建成功后-插件会创建venv虚拟环境-并设置隔离app工作区) 支持KBE项目结构，隔离BASE/CELL/BOTS 工作区
+- [x] [**项目支持**](https://www.kbelab.com/kbex/create_project.html#_3-创建成功后-插件会创建venv虚拟环境-并设置隔离app工作区) 支持KBE项目结构，隔离BASE/CELL/BOTS 工作区
 
-- [x] [**内置 KBEngine 模块**](https://www.kbelab.com/kbex/builtin_modules.md) 插件内置 KBEngine 模块，支持tips自动区分BASE、CELL等模块，自动提示、补全
+- [x] [**内置 KBEngine 模块**](https://www.kbelab.com/kbex/builtin_modules.html) 插件内置 KBEngine 模块，支持tips自动区分BASE、CELL等模块，自动提示、补全
 
-- [x] [**内置 Math 模块**](https://www.kbelab.com/kbex/builtin_modules.md) 件内置 Math 模块，支持内置方法自动提示、补全
+- [x] [**内置 Math 模块**](https://www.kbelab.com/kbex/builtin_modules.html) 件内置 Math 模块，支持内置方法自动提示、补全
 
-- [x] [**自动补全**](https://www.kbelab.com/kbex/completion_contributor.md) 支持base/cell class 映射、代码自动补全 ，支持client方法自动补全，支持def文件自动补全及代码生成
+- [x] [**自动补全**](https://www.kbelab.com/kbex/completion_contributor.html) 支持base/cell class 映射、代码自动补全 ，支持client方法自动补全，支持def文件自动补全及代码生成
 
-- [x] [**代码跳转**](https://www.kbelab.com/kbex/completion_contributor.md#符号跳转) 支持base/cell/client 跳转符号定义处
+- [x] [**代码跳转**](https://www.kbelab.com/kbex/completion_contributor.html#符号跳转) 支持base/cell/client 跳转符号定义处
 
-- [x] [**文件映射**](https://www.kbelab.com/kbex/completion_contributor.md#文件映射) 支持PY文件与DEF文件间的项目跳转
+- [x] [**文件映射**](https://www.kbelab.com/kbex/completion_contributor.html#文件映射) 支持PY文件与DEF文件间的项目跳转
 
-- [x] [**类型映射**](https://www.kbelab.com/kbex/completion_contributor.md#类型映射) 为KBE基础类型提供类型映射
+- [x] [**类型映射**](https://www.kbelab.com/kbex/completion_contributor.html#类型映射) 为KBE基础类型提供类型映射
 
 
 ---
