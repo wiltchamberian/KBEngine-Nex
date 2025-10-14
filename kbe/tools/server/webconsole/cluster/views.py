@@ -13,7 +13,7 @@ from webconsole.machines_mgr import machinesmgr
 from webconsole.models import KBEUserExtension
 
 
-# Create your views here.
+# ===================view===============================
 def server_shutdown(request):
     """
     停止服务器
@@ -32,7 +32,7 @@ def server_shutdown(request):
 
     ext = KBEUserExtension.objects.get(user=request.user)
     system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
-    system_username = "" if ext.system_user_uid is None else ext.system_username
+    system_username = "" if ext.system_username is None else ext.system_username
 
     components = Machines.Machines(system_user_uid, system_username)
 
@@ -54,7 +54,7 @@ def server_kill(request, ct, cid):
 
     ext = KBEUserExtension.objects.get(user=request.user)
     system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
-    system_username = "" if ext.system_user_uid is None else ext.system_username
+    system_username = "" if ext.system_username is None else ext.system_username
 
     components = Machines.Machines(system_user_uid, system_username)
     hosts = kbe_util.get_machines_address()
@@ -66,22 +66,34 @@ def server_kill(request, ct, cid):
     }
     return render(request, "cluster/server_kill.html", context)
 
+def server_runapp():
+    pass
 
 def server_run(request):
     """
     运行组件
     """
-    components = Machines.Machines(request.session["sys_uid"], request.session["sys_user"])
-    context = {}
+
+    ext = KBEUserExtension.objects.get(user=request.user)
+    system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
+    system_username = "" if ext.system_username is None else ext.system_username
+    kbe_root = "" if ext.kbe_root is None else ext.kbe_root
+    kbe_bin_path = "" if ext.kbe_bin_path is None else ext.kbe_bin_path
+    kbe_res_path = "" if ext.kbe_res_path is None else ext.kbe_res_path
+
+    components = Machines.Machines(system_user_uid, system_username)
+    context = {
+        "ext":ext
+    }
 
     POST = request.POST
     if POST.get("run", ""):
         componentType = int(POST.get("componentType", "0"))
         targetMachine = POST.get("targetMachine", "").strip()
         runNumber = int(POST.get("runNumber", "0"))
-        kbe_root = request.session["kbe_root"]
-        kbe_res_path = request.session["kbe_res_path"]
-        kbe_bin_path = request.session["kbe_bin_path"]
+        # kbe_root = request.session["kbe_root"]
+        # kbe_res_path = request.session["kbe_res_path"]
+        # kbe_bin_path = request.session["kbe_bin_path"]
 
         if componentType not in Define.VALID_COMPONENT_TYPE_FOR_RUN or \
                 not machinesmgr.hasMachine(targetMachine) or \
@@ -92,14 +104,15 @@ def server_run(request):
                 cid = machinesmgr.makeCID(componentType)
                 gus = machinesmgr.makeGUS(componentType)
                 print("cid: %s, gus: %s" % (cid, gus))
+
                 components.startServer(componentType, cid, gus, targetMachine, kbe_root, kbe_res_path, kbe_bin_path)
 
             time.sleep(2)
-            return HttpResponseRedirect("/wc/components/manage")
+            return JsonResponse({"result": "ok"})
 
     context["machines"] = machinesmgr.machines
 
-    return render(request, "WebConsole/components_run.html", context)
+    return render(request, "cluster/server_run.html", context)
 
 
 def server_stop(request, ct, cid):
@@ -111,7 +124,7 @@ def server_stop(request, ct, cid):
 
     ext = KBEUserExtension.objects.get(user=request.user)
     system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
-    system_username = "" if ext.system_user_uid is None else ext.system_username
+    system_username = "" if ext.system_username is None else ext.system_username
 
     components = Machines.Machines(system_user_uid, system_username)
 
@@ -126,13 +139,15 @@ def server_stop(request, ct, cid):
     return render(request, "cluster/server_shutdown.html", context)
 
 
+
+# ========================api==============================
 def server_query(request):
     """
     请求获取组件数据
     """
     ext = KBEUserExtension.objects.get(user=request.user)
     system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
-    system_username = "" if ext.system_user_uid is None else ext.system_username
+    system_username = "" if ext.system_username is None else ext.system_username
 
     interfaces_groups = machinesmgr.queryAllInterfaces(system_user_uid, system_username)
 
@@ -174,7 +189,7 @@ def server_one_query(request, ct, cid):
 
     ext = KBEUserExtension.objects.get(user=request.user)
     system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
-    system_username = "" if ext.system_user_uid is None else ext.system_username
+    system_username = "" if ext.system_username is None else ext.system_username
 
     ct = int(ct)
     cid = int(cid)
