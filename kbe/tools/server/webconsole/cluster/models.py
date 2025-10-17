@@ -27,3 +27,24 @@ class ServerManage(models.Model):
 
     def __str__(self):
         return "服务器管理"
+
+
+class ServerLog(models.Model):
+    class Meta:
+        managed = False  # 不需要创建数据库表
+        app_label = 'cluster'  # ✅ 指定所属应用标签
+        verbose_name = '实时日志'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return "实时日志"
+
+class ServerMachines(models.Model):
+    class Meta:
+        managed = False  # 不需要创建数据库表
+        app_label = 'cluster'  # ✅ 指定所属应用标签
+        verbose_name = '进程状态'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return "进程状态"

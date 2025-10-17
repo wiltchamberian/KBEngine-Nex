@@ -345,3 +345,8 @@ def server_save_config(request):
 
     result = {"state": "success", "message": ""}
     return JsonResponse(result, safe=False)
+
+
+
+def server_log(request):
+    pass

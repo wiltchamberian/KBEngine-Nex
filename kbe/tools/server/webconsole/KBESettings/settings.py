@@ -12,19 +12,20 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-
 
 # 静态文件 URL 前缀
 STATIC_URL = '/static/'
 # 指定 Django 在开发时从哪里收集静态文件
 STATICFILES_DIRS = [
-    BASE_DIR / "static",   # ✅ 指向项目根目录下的 static 文件夹
+    BASE_DIR / "static",  # ✅ 指向项目根目录下的 static 文件夹
 ]
+
+
+# 临时静态收集目录（即使开发阶段也要设置）
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -37,11 +38,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
     # 'simpleui',
+    "channels",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -51,6 +52,10 @@ INSTALLED_APPS = [
     'webconsole.apps.AdminConfig',
     'cluster.apps.ClusterConfig',
 ]
+
+
+ASGI_APPLICATION = "KBESettings.asgi.application"
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -81,7 +86,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'KBESettings.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -91,7 +95,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -110,7 +113,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -135,16 +137,11 @@ USE_I18N = True
 USE_TZ = False
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 # SIMPLEUI_STATIC_OFFLINE = True
 
@@ -152,7 +149,6 @@ SIMPLEUI_HOME_INFO = False
 
 # 指定simpleui默认的主题,指定一个文件名，相对路径就从simpleui的theme目录读取
 # SIMPLEUI_DEFAULT_THEME = 'ant.design.css'
-
 
 
 # BOOL
@@ -186,6 +182,5 @@ MACHINES_QUERY_WAIT_TIME = 1.0
 # 例子：
 # MACHINES_ADDRESS = ["192.168.0.1", "10.0.0.1", "172.16.0.1"]
 MACHINES_ADDRESS = ["192.168.139.176"]
-
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
