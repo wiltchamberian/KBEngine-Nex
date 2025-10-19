@@ -77,6 +77,7 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'templates'],  # ✅ 包含模板目录
         'APP_DIRS': True,
         'OPTIONS': {
+            'debug': True,  # 启用模板自动重载
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',

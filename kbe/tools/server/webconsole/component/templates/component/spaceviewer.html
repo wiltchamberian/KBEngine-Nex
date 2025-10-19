@@ -55,6 +55,15 @@
 <script>
 let timeTicket = null;
 
+var myChart = echarts.init(document.getElementById('space-viewer'));
+
+window.addEventListener('resize', function() {
+	myChart.resize();
+});
+var point_arr = []
+var cell_data = []
+
+
 window.onload = connect_to;
 
 function connect_to()
@@ -113,7 +122,7 @@ function connect_to()
 				data:list_data,
 				click: function(obj){
 					if(obj.data.space){
-						show_result(obj.data.id,obj.data.parentId);
+						show_result(obj.data.id,obj.data.parentId,obj.data.title);
 					}
 
 				}
@@ -126,15 +135,8 @@ function connect_to()
     $.data.connect_closed = false;
 }
 
-var myChart = echarts.init(document.getElementById('space-viewer'));
 
-window.addEventListener('resize', function() {
-myChart.resize();
-});
-var point_arr = []
-var cell_data = []
-
-function show_space()
+function show_space(title)
 {
 	point_arr = []
 	cell_data = []
@@ -144,7 +146,7 @@ function show_space()
 	  var data = cell_data;
 	  var option = {
 	    title: {
-	        text: 'Space Viewer'
+	        text: title
 	    },
 		dataZoom: [
         {
@@ -212,9 +214,9 @@ timeTicket = setInterval(function () {
 
     cell_socket.onclose = function(evt) {};
     cell_socket.onmessage = function(evt) {
-    	console.log(evt.data);
+    	// console.log(evt.data);
     	obj_cell = JSON.parse(evt.data);
-    	console.log(obj_cell);
+    	// console.log(obj_cell);
     	for( i in obj_cell["spaceEntity"]){
     		point_arr = [obj_cell["spaceEntity"][i]["position_X"],obj_cell["spaceEntity"][i]["position_Z"],40000000,i,obj_cell["spaceEntity"][i]["pEntity"]];
     		for (var j in cell_data )
@@ -231,7 +233,7 @@ timeTicket = setInterval(function () {
 	}
 }
 
-function show_result(spaceID,cellappCPID)
+function show_result(spaceID,cellappCPID,title)
 {
 	if(timeTicket!=null){
 		clearInterval(timeTicket);
@@ -245,9 +247,9 @@ function show_result(spaceID,cellappCPID)
      	var port = {{comp.intport}};
      	var cp = {{comp.componentType}};
      {% endfor %}
-     var href = "ws://{{http_host}}/ws/space_viewer_cell_process_cmd/"+"?cp="+cp+"&port="+port+"&host="+host+"&spaceID="+spaceID;
+     var href = "ws://{{http_host}}/ws/space_viewer/cell_process_cmd/"+"?cp="+cp+"&port="+port+"&host="+host+"&spaceID="+spaceID;
      $("#cell_ws_url").val(href);
-     show_space()
+     show_space(title)
 }
 
 </script>

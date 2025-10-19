@@ -2,15 +2,15 @@ from django.contrib import admin
 from django.template.response import TemplateResponse
 
 from KBESettings.custom_admin_site import custom_admin_site
-from component.models import SpaceViewer
+from component.models import Watcher
 from pycommon import Define
 from webconsole.machines_mgr import machinesmgr
 from webconsole.models import KBEUserExtension
 
 
-@admin.register(SpaceViewer, site=custom_admin_site)
-class SpaceViewerAdmin(admin.ModelAdmin):
-    change_list_template = "component/spaceviewer.html"
+@admin.register(Watcher, site=custom_admin_site)
+class WatcherAdmin(admin.ModelAdmin):
+    change_list_template = "component/watcher/components.html"
     list_display = []
 
     def has_add_permission(self, request): return False
@@ -18,9 +18,10 @@ class SpaceViewerAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """
-        控制台可连接的组件显示页面
-        """
-        VALID_CT = {Define.CELLAPPMGR_TYPE, Define.CELLAPP_TYPE}
+       控制台可连接的组件显示页面
+       """
+        VALID_CT = {Define.DBMGR_TYPE, Define.LOGINAPP_TYPE, Define.CELLAPP_TYPE, Define.BASEAPP_TYPE,
+                    Define.INTERFACES_TYPE, Define.LOGGER_TYPE}
 
         ext = KBEUserExtension.objects.get(user=request.user)
         system_user_uid = 0 if ext.system_user_uid is None else int(ext.system_user_uid)
@@ -33,21 +34,8 @@ class SpaceViewerAdmin(admin.ModelAdmin):
         for mID, comps in interfaces_groups.items():
             for comp in comps:
                 if comp.componentType in VALID_CT:
-                    kbeComps.append( comp)
-        try:
-            intaddr = kbeComps[0].intaddr
-            intport = kbeComps[0].intport
-            extaddr = kbeComps[0].extaddr
-            extport = kbeComps[0].extport
-            componentType = kbeComps[0].componentType
-            componentName = kbeComps[0].componentName
-            uid = system_user_uid
-        except:
-            context = {
-                "err" : "cellappmgr进程未运行"
-            }
-            return TemplateResponse(request, self.change_list_template, context)
-        ws_url = "ws://%s/ws/space_viewer/process_cmd/?host=%s&port=%s&cp=%s" % ( request.META["HTTP_HOST"], intaddr, intport, componentType)
+                    kbeComps.append(comp)
+
 
         context = {
             **self.admin_site.each_context(request),
@@ -58,15 +46,7 @@ class SpaceViewerAdmin(admin.ModelAdmin):
                 "opts": self.model._meta
             },
             "http_host": request.META["HTTP_HOST"],
-            "kbeComps": kbeComps,
-            "intaddr": intaddr,
-            "intport": intport,
-            "extaddr": extaddr,
-            "extport": extport,
-            "componentType": componentType,
-            "componentName": componentName,
-            "uid": uid,
-            "ws_url": ws_url,
+            "KBEComps": kbeComps,
             **(extra_context or {}),
         }
         return TemplateResponse(request, self.change_list_template, context)
