@@ -196,16 +196,41 @@ function show_space(title)
 	        },
 	    }]
 	}
-	myChart.setOption(option);
+	myChart.setOption(option, { notMerge: true, lazyUpdate: false });
 	myChart.resize();
 
 };
 
 timeTicket = setInterval(function () {
+
+// 转换成 ECharts 能识别的带 id 的格式
+const scatterData = cell_data.map((item, index) => ({
+    value: [item[0], item[1], item[2]],
+    label: { show: true, formatter: item[3] },
+    group: item[4],
+    id: item[3]  // 唯一 ID
+}));
+
+// 定义不同 group 的颜色
+// const groupColors = {
+//     2: '#ff7f50',
+//     5: '#87cefa',
+//     6: '#da70d6',
+//     7: '#32cd32',
+//     11: '#ffa500'
+// };
+
+// itemStyle: {
+ //            color: function(params) {
+ //                return groupColors[params.data.group] || '#888'; // 默认颜色
+ //            }
+ //        },
+
     //实时更新重写数据
     myChart.setOption({
         series: [{
-          data: cell_data
+          data: scatterData,
+
         }]
       });
 }, 500);
