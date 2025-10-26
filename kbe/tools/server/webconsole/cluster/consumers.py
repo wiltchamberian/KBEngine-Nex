@@ -60,7 +60,7 @@ class LogWatch(object):
         self.logger.close()
 
         if self.wsInst:
-            self.wsInst.close()
+            await self.wsInst.close()
         self.wsInst = None
 
         self.extaddr = ""
