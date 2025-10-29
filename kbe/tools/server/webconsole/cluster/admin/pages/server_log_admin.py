@@ -44,6 +44,13 @@ class ServerManageAdmin(admin.ModelAdmin):
             uid = system_user_uid
         except:
             context = {
+                **self.admin_site.each_context(request),
+                "title": self.model._meta.verbose_name_plural,
+                "cl": {
+                    "model":self.model,
+                    "model_admin": self,
+                    "opts": self.model._meta
+                },
                 "unlogger": "logger进程未运行"
             }
             return TemplateResponse(request, self.change_list_template, context)
