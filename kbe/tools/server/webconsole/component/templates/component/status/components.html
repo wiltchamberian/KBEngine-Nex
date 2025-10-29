@@ -1,8 +1,14 @@
-{% extends "WebConsole/base.html" %}
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block extrastyle %}
+<link href="{% static 'css/admin_style.css' %}" rel="stylesheet">
+{% endblock extrastyle %}
+
+
 
 {% block content %}
 <div class="row placeholders status-show-block">
-  <div id="server-title"><h4>The machine on {{ http_host }}</h4></div>
+<!--  <div id="server-title"><h4>The machine on {{ http_host }}</h4></div>-->
   <div><hr style=" height:1px;border:none;border-top:1px solid ;" /></div>
 {% for comp in KBEComps %}
 {% if comp.componentType == 3 or comp.componentType == 4 %}
@@ -14,19 +20,21 @@
   {% endif %}
 {% endfor %}
 </div>
-{% endblock %}
+{% endblock content %}
 
-{% block tail_js %}
-<script>$(".condition-cp").addClass("active");</script>
+{% block extrabody %}
+
+<script src="/static/js/pytools.js"></script>
+<script src="/static/js/jquery-3.7.1.min.js"></script>
+<script src="/static/js/echarts6.0.min.js"></script>
+
+
 <script>
-  $(".kbe-list .dd").hide();
-  $(".kbe-list .condition .dd").show();
-  $(".kbe-list .condition").css({"background-color":"#317eb4"});
-  $(".kbe-list .condition").find('li').addClass("menu_chioce");
+
 
 function connect(cp, port, host)
 {
-  window.location.href='/wc/status/connect?cp=' + cp + "&port=" + port + "&host="+ host;
+  //window.location.href='/wc/status/connect?cp=' + cp + "&port=" + port + "&host="+ host;
   // layer.load(2);
 }
 
@@ -50,7 +58,7 @@ function {{comp.fullname}}_connect_to()
   {{comp.fullname}}_cp_arr = { {% for comp2 in KBEComps %}{% if comp.componentType == 3 %}{% if comp2.componentType == 6 %}{{ comp2.componentID }}:new Array(),{% endif %}{% elif comp.componentType == 4 %}{% if comp2.componentType == 5 %}{{ comp2.componentID }}:new Array(),{% endif %}{% endif %}{% endfor %}}
   var myChart = echarts.init(document.getElementById('{{comp.fullname}}-chart'));
   
-  var {{comp.fullname}}_socket = new WebSocket("ws://{{ http_host }}/wc/status/process_cmd?cp={{ comp.componentType }}&host={{ comp.intaddr }}&port={{ comp.intport }}");
+  var {{comp.fullname}}_socket = new WebSocket("ws://{{ http_host }}/ws/status/process_cmd/?cp={{ comp.componentType }}&host={{ comp.intaddr }}&port={{ comp.intport }}");
   {{comp.fullname}}_socket.onopen = function(evt)
   { 
     
@@ -59,6 +67,7 @@ function {{comp.fullname}}_connect_to()
           trigger: 'axis'
       },
       legend: {
+          top:'5%',
         data:[{% for comp3 in KBEComps %}{% if comp.componentType == 3 %}{% if comp3.componentType == 6 %}'{{ comp3.fullname }}[{{ comp3.componentID }}]',{% endif %}{% elif comp.componentType == 4 %}{% if comp3.componentType == 5 %}'{{ comp3.fullname }}[{{ comp3.componentID }}]',{% endif %}{% endif %}{% endfor %}],
     },
       dataZoom: [
@@ -71,27 +80,18 @@ function {{comp.fullname}}_connect_to()
           realtime:true
         }
     ],
-      grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '5%',
-          containLabel: true
-      },
-      xAxis : [
-          {
+
+      xAxis : {
               type : 'category',
               boundaryGap : false,
-              data : []
-          }
-      ],
-      yAxis : [
-        {
+              show :false,
+          },
+      yAxis :{
           scale: true,
             splitArea: {
                 show: true
             }
-        }
-      ],
+        },
       series : [
       {% for comp3 in KBEComps %}{% if comp.componentType == 3 %}{% if comp3.componentType == 6 %}
       {
@@ -112,6 +112,9 @@ function {{comp.fullname}}_connect_to()
         
       ]
     };
+
+
+
     myChart.setOption(option);
       //实时获取dataZoom的状态
     myChart.on("dataZoom",function(params){
@@ -122,15 +125,13 @@ function {{comp.fullname}}_connect_to()
     timeTicket = setInterval(function () {
       if (arr_x.length > 50)
           start_num = end_num - (50/arr_x.length)*100;
-      
-      myChart.setOption({
+
+       let option = {
         dataZoom : [{
          start:start_num,
          end:end_num,
         }],
-          // xAxis : [{
-          //   data : arr_x
-          // }],
+
           series: [
       {% for comp3 in KBEComps %}{% if comp.componentType == 3 %}{% if comp3.componentType == 6 %}
       {
@@ -140,9 +141,11 @@ function {{comp.fullname}}_connect_to()
       {
         name:'{{ comp3.fullname }}[{{ comp3.componentID }}]',
         data:{{comp.fullname}}_cp_arr[{{ comp3.componentID }}]
-      },{% endif %}{% endif %}{% endfor %}  
+      },{% endif %}{% endif %}{% endfor %}
       ]
-        });
+        }
+
+      myChart.setOption(option);
       }, 500);
     }; 
     {{comp.fullname}}_socket.onclose = function(evt) { }; 
@@ -161,4 +164,4 @@ function {{comp.fullname}}_connect_to()
 {% endfor %}
 </script>
     
-{% endblock %}
+{% endblock extrabody%}

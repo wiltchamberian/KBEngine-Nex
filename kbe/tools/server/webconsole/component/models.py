@@ -43,3 +43,14 @@ class Profile(models.Model):
     def __str__(self):
         return "性能分析"
 
+
+class Status(models.Model):
+    class Meta:
+        managed = False  # 不需要创建数据库表
+        app_label = 'component'  # ✅ 指定所属应用标签
+        verbose_name = '状态'
+        verbose_name_plural = verbose_name
+
+    def __str__(self):
+        return "状态"
+
