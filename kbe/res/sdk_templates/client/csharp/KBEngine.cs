@@ -573,7 +573,7 @@ namespace KBEngine
 			if(noconnect)
 			{
 				reset();
-				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_loginapp_callback, null);
+				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_loginapp_callback, null,_args.domainMapping,_args.portMapping);
 			}
 			else
 			{
@@ -627,16 +627,16 @@ namespace KBEngine
 				{
 					_networkInterface = new NetworkInterfaceTCP();
 					
-					_networkInterface.connectTo(baseappIP, baseappTcpPort, onConnectTo_baseapp_callback, null);
+					_networkInterface.connectTo(baseappIP, baseappTcpPort, onConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 				}else if (_args.networkType is NETWORK_TYPE.KCP)
 				{
 					_networkInterface = new NetworkInterfaceKCP();
 					
-					_networkInterface.connectTo(baseappIP, baseappUdpPort, onConnectTo_baseapp_callback, null);
+					_networkInterface.connectTo(baseappIP, baseappUdpPort, onConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 				}else if (_args.networkType is NETWORK_TYPE.UNITY_WEB_SOCKET)
 				{
 					_networkInterface = new NetworkInterfaceUnityWS();
-					_networkInterface.connectTo(baseappIP, baseappTcpPort, onConnectTo_baseapp_callback, null);
+					_networkInterface.connectTo(baseappIP, baseappTcpPort, onConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 				}
 				
 			}
@@ -694,16 +694,16 @@ namespace KBEngine
 			{
 				_networkInterface = new NetworkInterfaceTCP();
 				
-				_networkInterface.connectTo(baseappIP, baseappTcpPort, onReConnectTo_baseapp_callback, null);
+				_networkInterface.connectTo(baseappIP, baseappTcpPort, onReConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 			}else if (_args.networkType is NETWORK_TYPE.KCP)
 			{
 				_networkInterface = new NetworkInterfaceKCP();
 				
-				_networkInterface.connectTo(baseappIP, baseappUdpPort, onReConnectTo_baseapp_callback, null);
+				_networkInterface.connectTo(baseappIP, baseappUdpPort, onReConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 			}else if (_args.networkType is NETWORK_TYPE.UNITY_WEB_SOCKET)
 			{
 				_networkInterface = new NetworkInterfaceUnityWS();	
-				_networkInterface.connectTo(baseappIP, baseappTcpPort, onReConnectTo_baseapp_callback, null);
+				_networkInterface.connectTo(baseappIP, baseappTcpPort, onReConnectTo_baseapp_callback, null,_args.domainMapping,_args.portMapping);
 			}
 		}
 
@@ -775,7 +775,7 @@ namespace KBEngine
 			if(noconnect)
 			{
 				reset();
-				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_resetpassword_callback, null);
+				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_resetpassword_callback, null,_args.domainMapping,_args.portMapping);
 			}
 			else
 			{
@@ -882,7 +882,7 @@ namespace KBEngine
 			if(noconnect)
 			{
 				reset();
-				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_createAccount_callback, null);
+				_networkInterface.connectTo(_args.ip, _args.port, onConnectTo_createAccount_callback, null,_args.domainMapping,_args.portMapping);
 			}
 			else
 			{
