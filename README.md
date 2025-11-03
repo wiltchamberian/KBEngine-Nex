@@ -37,9 +37,7 @@
 
 - [x] [**远程服务**](https://www.kbelab.com/kbex/settings.html#二、ssh-配置功能) 支持远程服务端，自动上传项目
 
-- [x] [**项目支持
-  **](https://www.kbelab.com/kbex/create_project.html#_3-创建成功后-插件会创建venv虚拟环境-并设置隔离app工作区)
-  支持KBE项目结构，隔离BASE/CELL/BOTS 工作区
+- [x] [**项目支持**](https://www.kbelab.com/kbex/create_project.html#_3-创建成功后-插件会创建venv虚拟环境-并设置隔离app工作区) 支持KBE项目结构，隔离BASE/CELL/BOTS 工作区
 
 - [x] [**内置 KBEngine 模块**](https://www.kbelab.com/kbex/builtin_modules.html) 插件内置 KBEngine
   模块，支持tips自动区分BASE、CELL等模块，自动提示、补全
