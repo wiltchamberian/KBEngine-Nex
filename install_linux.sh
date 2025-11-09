@@ -206,4 +206,4 @@ cmake -B build -S . \
 echo "[INFO] Building KBEngine-Nex"
 cmake --build build -j"$(nproc)"
 
-echo "[INFO] Installation complete 🎉"
+echo "[INFO] Installation complete"

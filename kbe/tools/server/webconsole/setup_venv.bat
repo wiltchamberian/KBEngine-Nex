@@ -46,7 +46,7 @@ if exist "%VENV_DIR%\Scripts\activate.bat" (
 )
 
 REM ====================================================
-REM 🔧 4. Install dependencies
+REM 4. Install dependencies
 REM ====================================================
 if exist "requirements.txt" (
     echo Installing dependencies...
@@ -57,9 +57,9 @@ if exist "requirements.txt" (
 )
 
 REM ====================================================
-REM ⚙️ 5. Run database migrations
+REM 5. Run database migrations
 REM ====================================================
-echo ⚙️ Running database migrations...
+echo Running database migrations...
 python manage.py makemigrations
 python manage.py migrate
 
