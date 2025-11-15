@@ -186,6 +186,87 @@ install_linux.sh Hybrid
 install_linux.sh Evaluation
 ```
 
+
+
+##### Docker：
+
+本镜像用于快速启动 KBEngine-Nex
+
+###### 准备条件
+
+1.	已安装 Docker （在 macOS/Windows/Linux 上均可）。
+2.	本地有一个用于映射的目录，例如你提供的：/Users/KBE/worksapce/Kbengine/demo_kbengine_nex_assets，用于映射到容器内的资产路径。
+3.	理解你希望使用的容器名、端口范围及卷映射：
+•	容器名：kbenginex-nex-server
+•	TCP 端口映射：主机 20013-20025 映射到容器 20013-20025（请注意，端口需要和你的服务端配置一致）
+•	UDP 端口映射：主机 20005-20009 映射到容器 20005-20009（请注意，端口需要和你的服务端配置一致）
+•	卷映射：主机 /Users/KBE/worksapce/Kbengine/demo_kbengine_nex_assets 映射到容器内 /KBE/server_assets
+
+###### 拉取镜像
+
+``` bash
+docker pull kbenginelab/kbengine-nex
+```
+
+###### 创建容器（Create）
+
+以下命令仅创建容器，不立即运行：
+
+``` bash
+docker create   --name kbenginex-nex-server   -p 20013-20025:20013-20025/tcp   -p 20005-20009:20005-20009/udp   -v /Users/KBE/worksapce/Kbengine/demo_kbengine_nex_assets:/KBE/server_assets   kbenginelab/kbengine-nex
+```
+
+说明：
+
+-   `--name kbenginex-nex-server`：容器名称\
+-   `-p`：开放并映射 TCP/UDP 端口\
+-   `-v`：将本地资产目录挂载到容器内部 `/KBE/server_assets`\
+-   创建完成后容器处于 *Created* 状态，不会立即运行
+
+###### 启动容器（Start）
+
+``` bash
+docker start kbenginex-nex-server
+```
+
+查看启动日志：
+
+``` bash
+docker logs -f kbenginex-nex-server
+```
+
+###### 进入容器（可选）
+
+``` bash
+docker exec -it kbenginex-nex-server /bin/bash
+```
+
+###### 停止与再次启动
+
+注意：docker stop 命令非安全退出，会导致持久化数据丢失，请在容器中执行safe_kill.sh 脚本
+
+``` bash
+docker stop kbenginex-nex-server
+docker start kbenginex-nex-server
+```
+
+###### 删除容器
+
+``` bash
+docker rm kbenginex-nex-server
+```
+
+###### 挂载的资产目录说明
+
+本地路径：
+
+    /Users/KBE/worksapce/Kbengine/demo_kbengine_nex_assets
+
+映射到容器内部：
+
+    /KBE/server_assets
+
+
 ---
 
 ## 支持的引擎
