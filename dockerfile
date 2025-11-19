@@ -28,14 +28,23 @@ RUN rm -rf /KBE/kbe/src/build \
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 
-# login base
+# login base app  客户端通讯端口
 EXPOSE 20013-20025/tcp
 
-# base UDP
+# base UDP 客户端通讯端口
 EXPOSE 20005-20009/udp
 
-# machine
+# machine  接收广播端口
+EXPOSE 20086/tcp
+# machine  服务发现广播端口
+EXPOSE 20087/tcp
+# machine  对外提供 TCP 服务端口
+EXPOSE 20088/tcp
+
+
+# machine 客户端通讯端口
 EXPOSE 20099-20102/tcp
+
 
 #interfaces telnet
 EXPOSE 33000-33002/tcp
