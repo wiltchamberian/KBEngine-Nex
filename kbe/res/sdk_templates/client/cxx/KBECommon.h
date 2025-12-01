@@ -258,6 +258,75 @@ inline int64 safe_stoll(const KBString& s)
 
 
 
+inline int64 safe_atoi64(const KBCHAR* s)
+{
+	if (s == nullptr || *s == '\0')
+		return 0;
+
+	errno = 0;
+	char* end = nullptr;
+
+	int64 v = strtoll(s, &end, 10);
+
+	// 无法解析 or 溢出 → 返回 0（与 UE 行为一致）
+	if (end == s || errno == ERANGE)
+		return 0;
+
+	return v;
+}
+
+inline int64 safe_atoi64(const KBString& s)
+{
+	return safe_atoi64(s.c_str());
+}
+
+
+
+
+inline double safe_atod(const KBCHAR* s)
+{
+	if (s == nullptr || *s == '\0')
+		return 0.0;
+
+	errno = 0;
+	char* end = nullptr;
+
+	double v = strtod(s, &end);
+
+	if (end == s || errno == ERANGE)
+		return 0.0;
+
+	return v;
+}
+
+inline double safe_atod(const KBString& s)
+{
+	return safe_atod(s.c_str());
+}
+
+
+inline float safe_atof(const KBCHAR* s)
+{
+	if (s == nullptr || *s == '\0')
+		return 0.0f;
+
+	errno = 0;
+	char* end = nullptr;
+
+	float v = strtof(s, &end);
+
+	if (end == s || errno == ERANGE)
+		return 0.0f;
+
+	return v;
+}
+
+inline float safe_atof(const KBString& s)
+{
+	return safe_atof(s.c_str());
+}
+
+
 //
 // // UE4的尺度单位转化为米
 // #define UE4_SCALE_UNIT_TO_METER 100.f
