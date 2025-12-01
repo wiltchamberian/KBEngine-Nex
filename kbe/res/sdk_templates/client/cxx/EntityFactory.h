@@ -30,6 +30,8 @@ public:
         if (it != creators_.end()) {
             return it->second();
         }
+
+        ERROR_MSG("EntityFactory::create: unknown class name: %s" , name.c_str());
         return nullptr;
     }
 
