@@ -21,47 +21,61 @@
 #include "Misc/OutputDevice.h"
 #include "Engine/Engine.h"
 
+
+#define __KBENGINE_FORMAT(Buffer, BufferSize, Format, ...) \
+    snprintf(Buffer, BufferSize, Format, ##__VA_ARGS__);
+
 #define INFO_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT(Format), ##__VA_ARGS__); \
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Msg); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), Format, ##__VA_ARGS__); \
+    UE_LOG(LogTemp, Log, TEXT("%s"), UTF8_TO_TCHAR(__buf)); \
 }
 
 #define DEBUG_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT("**DEBUG** " Format), ##__VA_ARGS__); \
-    UE_LOG(LogTemp, Log, TEXT("%s"), *Msg); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), "[DEBUG] " Format, ##__VA_ARGS__); \
+    UE_LOG(LogTemp, Log, TEXT("%s"), UTF8_TO_TCHAR(__buf)); \
 }
 
 #define WARNING_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT("**WARNING** " Format), ##__VA_ARGS__); \
-    UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), "[WARNING] " Format, ##__VA_ARGS__); \
+    UE_LOG(LogTemp, Warning, TEXT("%s"), UTF8_TO_TCHAR(__buf)); \
 }
 
 #define ERROR_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT("**ERROR** " Format), ##__VA_ARGS__); \
-    UE_LOG(LogTemp, Error, TEXT("%s"), *Msg); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), "[ERROR] " Format, ##__VA_ARGS__); \
+    UE_LOG(LogTemp, Error, TEXT("%s"), UTF8_TO_TCHAR(__buf)); \
 }
 
 #define SCREEN_WARNING_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT("**WARNING** " Format), ##__VA_ARGS__); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), "[WARNING] " Format, ##__VA_ARGS__); \
+    const FString Msg = UTF8_TO_TCHAR(__buf); \
     UE_LOG(LogTemp, Warning, TEXT("%s"), *Msg); \
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, Msg); \
 }
 
 #define SCREEN_ERROR_MSG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT("**ERROR** " Format), ##__VA_ARGS__); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), "[ERROR] " Format, ##__VA_ARGS__); \
+    const FString Msg = UTF8_TO_TCHAR(__buf); \
     UE_LOG(LogTemp, Error, TEXT("%s"), *Msg); \
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, Msg); \
 }
 
 #define SCREENDEBUG(Format, ...) \
 { \
-    const FString Msg = FString::Printf(TEXT(Format), ##__VA_ARGS__); \
+    char __buf[2048]; \
+    __KBENGINE_FORMAT(__buf, sizeof(__buf), Format, ##__VA_ARGS__); \
+    const FString Msg = UTF8_TO_TCHAR(__buf); \
     if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::White, Msg); \
 }
 
