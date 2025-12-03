@@ -655,7 +655,7 @@ void KBEngineApp::Client_onScriptVersionNotMatch(MemoryStream& stream)
 {
 	stream >> serverScriptVersion_;
 
-	ERROR_MSG("KBEngineApp::Client_onScriptVersionNotMatch(): verInfo=%s(server: %s)", clientScriptVersion_.c_str(), *serverScriptVersion_.c_str());
+	ERROR_MSG("KBEngineApp::Client_onScriptVersionNotMatch(): verInfo=%s(server: %s)", clientScriptVersion_.c_str(), serverScriptVersion_.c_str());
 
 	// UKBEventData_onScriptVersionNotMatch* pEventData = NewObject<UKBEventData_onScriptVersionNotMatch>();
 	auto pEventData = std::make_shared<UKBEventData_onScriptVersionNotMatch>();
@@ -812,7 +812,7 @@ void KBEngineApp::Client_onLoginFailed(MemoryStream& stream)
 	uint16 failedcode = 0;
 	stream >> failedcode;
 	stream.readBlob(serverdatas_);
-	ERROR_MSG("KBEngineApp::Client_onLoginFailed(): failedcode(%d:%s), datas(%d)!", failedcode, serverErr(failedcode).c_str(), serverdatas_.Num());
+	ERROR_MSG("KBEngineApp::Client_onLoginFailed(): failedcode(%d:%s), datas(%zu)!", failedcode, serverErr(failedcode).c_str(), serverdatas_.Num());
 
 	// UKBEventData_onLoginFailed* pEventData = NewObject<UKBEventData_onLoginFailed>();
 	auto pEventData = std::make_shared<UKBEventData_onLoginFailed>();
@@ -833,7 +833,7 @@ void KBEngineApp::Client_onLoginSuccessfully(MemoryStream& stream)
 	stream.readBlob(serverdatas_);
 
 	DEBUG_MSG("KBEngineApp::Client_onLoginSuccessfully(): accountName(%s), addr("
-		 "%s:%d:%d), datas(%d)!", accountName.c_str(), baseappIP_.c_str(), baseappTcpPort_, baseappUdpPort_, serverdatas_.Num());
+		 "%s:%d:%d), datas(%zu)!", accountName.c_str(), baseappIP_.c_str(), baseappTcpPort_, baseappUdpPort_, serverdatas_.Num());
 	
 	login_baseapp(true);
 }
@@ -1184,7 +1184,7 @@ void KBEngineApp::Client_initSpaceData(MemoryStream& stream)
 		Client_setSpaceData(spaceID_, key, val);
 	}
 
-	DEBUG_MSG("KBEngineApp::Client_initSpaceData(): spaceID(%d), size(%d)!", spaceID_, spacedatas_.Num());
+	DEBUG_MSG("KBEngineApp::Client_initSpaceData(): spaceID(%d), size(%zu)!", spaceID_, spacedatas_.Num());
 }
 
 void KBEngineApp::Client_setSpaceData(uint32 spaceID, const KBString& key, const KBString& value)

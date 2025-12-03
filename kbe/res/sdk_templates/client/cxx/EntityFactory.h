@@ -32,7 +32,7 @@ public:
         }
 
         ERROR_MSG("EntityFactory::create: unknown class name: %s" , name.c_str());
-        return nullptr;
+        return std::make_unique<KBEngine::Entity>();
     }
 
 private:

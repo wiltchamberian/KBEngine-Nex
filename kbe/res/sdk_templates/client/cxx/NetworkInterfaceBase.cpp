@@ -12,15 +12,15 @@ namespace KBEngine
 {
 
 NetworkInterfaceBase::NetworkInterfaceBase():
+	pMessageReader_(new MessageReader()),
+	pBuffer_(new MemoryStream()),
 	connectCB_(nullptr),
 	connectIP_(KBTEXT("")),
 	connectPort_(0),
 	connectUserdata_(0),
 	startTime_(0.0),
 	isDestroyed_(false),
-	pFilter_(nullptr),
-	pMessageReader_(new MessageReader()),
-	pBuffer_(new MemoryStream())
+	pFilter_(nullptr)
 {
 }
 

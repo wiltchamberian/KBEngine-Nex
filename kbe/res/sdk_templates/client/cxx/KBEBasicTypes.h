@@ -15,9 +15,9 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+// #ifdef _WIN32
+// #include <windows.h>
+// #endif
 
 
 using KBCHAR = char;               // 全平台 char
@@ -44,21 +44,76 @@ struct KBString : public KBStringBase
     }
 
     // wchar_t → UTF8 辅助函数（可选）
+    // static std::string WCharToUTF8(const wchar_t* wstr)
+    // {
+    //     if (!wstr) return "";
+
+    //     int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr, -1,
+    //                                           NULL, 0, NULL, NULL);
+
+    //     std::string result(size_needed, '\0');
+
+    //     WideCharToMultiByte(CP_UTF8, 0, wstr, -1,
+    //                         &result[0], size_needed, NULL, NULL);
+
+    //     // 去掉最后一个 '\0'
+    //     if (!result.empty() && result.back() == '\0')
+    //         result.pop_back();
+
+    //     return result;
+    // }
+
+    // static std::string WCharToUTF8(const wchar_t* wstr)
+    // {
+    //     if (!wstr) return "";
+
+    //     std::wstring ws(wstr);
+
+    //     std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    //     return conv.to_bytes(ws);
+    // }
+
+
+    
     static std::string WCharToUTF8(const wchar_t* wstr)
     {
         if (!wstr) return "";
 
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr, -1,
-                                              NULL, 0, NULL, NULL);
+        std::string result;
 
-        std::string result(size_needed, '\0');
+        while (*wstr)
+        {
+            wchar_t wc = *wstr++;
 
-        WideCharToMultiByte(CP_UTF8, 0, wstr, -1,
-                            &result[0], size_needed, NULL, NULL);
-
-        // 去掉最后一个 '\0'
-        if (!result.empty() && result.back() == '\0')
-            result.pop_back();
+            if (wc <= 0x7F)
+            {
+                result.push_back(static_cast<char>(wc));
+            }
+            else if (wc <= 0x7FF)
+            {
+                result.push_back(static_cast<char>(0xC0 | ((wc >> 6) & 0x1F)));
+                result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+            }
+            else if (wc <= 0xFFFF)
+            {
+                result.push_back(static_cast<char>(0xE0 | ((wc >> 12) & 0x0F)));
+                result.push_back(static_cast<char>(0x80 | ((wc >> 6) & 0x3F)));
+                result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+            }
+    #if WCHAR_MAX > 0xFFFF
+            else if (wc <= 0x10FFFF)
+            {
+                result.push_back(static_cast<char>(0xF0 | ((wc >> 18) & 0x07)));
+                result.push_back(static_cast<char>(0x80 | ((wc >> 12) & 0x3F)));
+                result.push_back(static_cast<char>(0x80 | ((wc >> 6) & 0x3F)));
+                result.push_back(static_cast<char>(0x80 | (wc & 0x3F)));
+            }
+    #endif
+            else
+            {
+                throw std::runtime_error("Invalid wchar_t value");
+            }
+        }
 
         return result;
     }
@@ -71,7 +126,10 @@ struct KBString : public KBStringBase
     // ---- AppendInt ----
     void AppendInt(int value)
     {
-        this->append(std::to_string(value));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d", value);
+        this->append(buf);
+        // this->append(std::to_string(value));
     }
 
     // Append const char*

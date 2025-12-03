@@ -31,7 +31,7 @@ public:
             return it->second();
         }
         ERROR_MSG("EntityComponentFactory::create: unknown class name: %s" , name.c_str());
-        return nullptr;
+        return std::make_unique<KBEngine::EntityComponent>();
     }
 
 private:
