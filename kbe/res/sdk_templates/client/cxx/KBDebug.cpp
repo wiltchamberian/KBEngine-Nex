@@ -183,16 +183,74 @@ namespace KBDebug
         va_start(args, fmt);
         vsnprintf(buffer, sizeof(buffer), fmt, args);
         va_end(args);
+
+
         printf("%s %s\n", prefix, buffer);
     }
 
-    void log_info(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[INFO]", fmt, args); va_end(args); }
-    void log_debug(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[DEBUG]", fmt, args); va_end(args); }
-    void log_warning(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[WARNING]", fmt, args); va_end(args); }
-    void log_error(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[ERROR]", fmt, args); va_end(args); }
-    void log_screen_warning(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[WARNING][SCREEN]", fmt, args); va_end(args); }
-    void log_screen_error(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[ERROR][SCREEN]", fmt, args); va_end(args); }
-    void log_screen_debug(const char* fmt, ...) { va_list args; va_start(args, fmt); kbe_printf("[SCREEN]", fmt, args); va_end(args); }
+    void log_info(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[INFO] %s\n", buffer);
+    }
+    void log_debug(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[DEBUG] %s\n", buffer);
+    }
+    void log_warning(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[WARNING] %s\n", buffer);
+    }
+    void log_error(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[ERROR] %s\n", buffer);
+    }
+    void log_screen_warning(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[WARNING][SCREEN] %s\n", buffer);
+    }
+    void log_screen_error(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[ERROR][SCREEN] %s\n", buffer);
+    }
+    void log_screen_debug(const char* fmt, ...) {
+        char buffer[2048];
+        va_list args;
+        va_start(args, fmt);
+        vsnprintf(buffer, sizeof(buffer), fmt, args);
+        va_end(args);
+
+        printf("[SCREEN] %s\n", buffer);
+    }
 }
 
 #endif
