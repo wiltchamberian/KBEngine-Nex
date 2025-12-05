@@ -20,6 +20,8 @@ public:
 	// Sets default values for this component's properties
 	KBEMain();
 
+	void init();
+
 
 	void installEvents();
 	void deregisterEvents();

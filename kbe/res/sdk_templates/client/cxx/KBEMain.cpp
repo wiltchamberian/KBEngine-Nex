@@ -9,16 +9,8 @@
 #include "Entity.h"
 
 
-// Sets default values for this component's properties
 KBEMain::KBEMain()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-	bWantsInitializeComponent = true;
-
-	// ...
-
 	ip = TEXT("127.0.0.1");
 	port = 20013;
 	syncPlayerMS = 1000 / 10;
@@ -33,7 +25,16 @@ KBEMain::KBEMain()
 	UDP_SEND_BUFFER_MAX = 128;
 	UDP_RECV_BUFFER_MAX = 128;
 
+}
 
+// 析构
+KBEMain::~KBEMain()
+{
+	deregisterEvents();
+}
+
+bool KBEMain::init()
+{
 	KBEngine::KBEngineArgs* pArgs = new KBEngine::KBEngineArgs();
 	pArgs->ip = ip;
 	pArgs->port = port;
@@ -49,20 +50,15 @@ KBEMain::KBEMain()
 	pArgs->UDP_SEND_BUFFER_MAX = UDP_SEND_BUFFER_MAX;
 	pArgs->UDP_RECV_BUFFER_MAX = UDP_RECV_BUFFER_MAX;
 
-	if(!KBEngine::KBEngineApp::getSingleton().initialize(pArgs))
+	if(!KBEngine::KBEngineApp::getSingleton().initialize(pArgs)){
 		delete pArgs;
+		return false;
+	}
 
 	installEvents();
 
+	return true;
 }
-
-// 析构
-KBEMain::~KBEMain()
-{
-	deregisterEvents();
-}
-
-
 
 
 void KBEMain::installEvents()
