@@ -13,6 +13,26 @@
 */
 class KBEngineApp;
 
+UENUM(BlueprintType)
+enum class UE_CLIENT_TYPE : uint8
+{
+	CLIENT_TYPE_UNKNOWN		UMETA(DisplayName = "unknown"),
+	CLIENT_TYPE_MOBILE		UMETA(DisplayName = "Mobile"),
+	CLIENT_TYPE_WIN			UMETA(DisplayName = "Windows"),
+	CLIENT_TYPE_LINUX		UMETA(DisplayName = "Linux"),
+	CLIENT_TYPE_MAC			UMETA(DisplayName = "Mac"),
+	CLIENT_TYPE_BROWSER		UMETA(DisplayName = "Browser"),
+	CLIENT_TYPE_BOTS		UMETA(DisplayName = "Bots"),
+	CLIENT_TYPE_MINI		UMETA(DisplayName = "Mini"),
+};
+
+//加密通讯的类别
+UENUM(BlueprintType)
+enum class UE_NETWORK_ENCRYPT_TYPE : uint8
+{
+	ENCRYPT_TYPE_NONE			UMETA(DisplayName = "None"),
+	ENCRYPT_TYPE_BLOWFISH		UMETA(DisplayName = "Blowfish"),
+};
 
 // UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 UCLASS(ClassGroup = "KBEngine", blueprintable, editinlinenew, hidecategories = (Object, LOD, Lighting, TextureStreaming), meta = (DisplayName = "KBEngine Main", BlueprintSpawnableComponent))
@@ -110,11 +130,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
 	int port;
 
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
-	EKCLIENT_TYPE clientType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
+	UE_CLIENT_TYPE clientType;
 
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
-	NETWORK_ENCRYPT_TYPE networkEncryptType;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
+	UE_NETWORK_ENCRYPT_TYPE networkEncryptType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = KBEngine)
 	int syncPlayerMS;

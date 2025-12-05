@@ -9,6 +9,7 @@
 #include "Entity.h"
 
 
+
 // Sets default values for this component's properties
 UKBEMain::UKBEMain()
 {
@@ -25,8 +26,8 @@ UKBEMain::UKBEMain()
 	useAliasEntityID = true;
 	isOnInitCallPropertysSetMethods = true;
 	forceDisableUDP = false;
-	clientType = EKCLIENT_TYPE::CLIENT_TYPE_WIN;
-	networkEncryptType = NETWORK_ENCRYPT_TYPE::ENCRYPT_TYPE_NONE;
+	clientType = static_cast<UE_CLIENT_TYPE>(EKCLIENT_TYPE::CLIENT_TYPE_WIN);
+	networkEncryptType = static_cast<UE_NETWORK_ENCRYPT_TYPE>(NETWORK_ENCRYPT_TYPE::ENCRYPT_TYPE_NONE);
 	serverHeartbeatTick = 60;
 	TCP_SEND_BUFFER_MAX = TCP_PACKET_MAX;
 	TCP_RECV_BUFFER_MAX = TCP_PACKET_MAX;
@@ -56,8 +57,8 @@ void UKBEMain::BeginPlay()
 	pArgs->useAliasEntityID = useAliasEntityID;
 	pArgs->isOnInitCallPropertysSetMethods = isOnInitCallPropertysSetMethods;
 	pArgs->forceDisableUDP = forceDisableUDP;
-	pArgs->clientType = clientType;
-	pArgs->networkEncryptType = networkEncryptType;
+	pArgs->clientType = static_cast<EKCLIENT_TYPE>(clientType);
+	pArgs->networkEncryptType = static_cast<NETWORK_ENCRYPT_TYPE>(networkEncryptType);
 	pArgs->serverHeartbeatTick = serverHeartbeatTick / 2;
 	pArgs->TCP_SEND_BUFFER_MAX = TCP_SEND_BUFFER_MAX;
 	pArgs->TCP_RECV_BUFFER_MAX = TCP_RECV_BUFFER_MAX;
