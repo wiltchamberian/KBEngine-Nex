@@ -206,6 +206,12 @@ struct KBString : public KBStringBase
         return *this;
     }
 
+    KBString& operator=(const wchar_t* wstr)
+    {
+        this->assign(WCharToUTF8(wstr));
+        return *this;
+    }
+
     
 #if defined(KBE_PLATFORM_UE)
     // 添加 FString 构造
