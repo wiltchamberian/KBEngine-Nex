@@ -16,19 +16,19 @@
 // 	bWantsInitializeComponent = true;
 
 
-// 	ip = TEXT("127.0.0.1");
-// 	port = 20013;
-// 	syncPlayerMS = 1000 / 10;
-// 	useAliasEntityID = true;
-// 	isOnInitCallPropertysSetMethods = true;
-// 	forceDisableUDP = false;
-// 	clientType = static_cast<UE_CLIENT_TYPE>(EKCLIENT_TYPE::CLIENT_TYPE_WIN);
-// 	networkEncryptType = static_cast<UE_NETWORK_ENCRYPT_TYPE>(NETWORK_ENCRYPT_TYPE::ENCRYPT_TYPE_NONE);
-// 	serverHeartbeatTick = 60;
-// 	TCP_SEND_BUFFER_MAX = TCP_PACKET_MAX;
-// 	TCP_RECV_BUFFER_MAX = TCP_PACKET_MAX;
-// 	UDP_SEND_BUFFER_MAX = 128;
-// 	UDP_RECV_BUFFER_MAX = 128;
+	// ip = TEXT("127.0.0.1");
+	// port = @{KBE_LOGIN_PORT};
+	// syncPlayerMS = 1000 / @{KBE_UPDATEHZ};
+	// useAliasEntityID = @{KBE_USE_ALIAS_ENTITYID};
+	// isOnInitCallPropertysSetMethods = true;
+	// forceDisableUDP = false;
+	// clientType = EKCLIENT_TYPE::CLIENT_TYPE_WIN;
+	// networkEncryptType = NETWORK_ENCRYPT_TYPE::ENCRYPT_TYPE_NONE;
+	// serverHeartbeatTick = @{KBE_SERVER_EXTERNAL_TIMEOUT};
+	// TCP_SEND_BUFFER_MAX = TCP_PACKET_MAX;
+	// TCP_RECV_BUFFER_MAX = TCP_PACKET_MAX;
+	// UDP_SEND_BUFFER_MAX = 128;
+	// UDP_RECV_BUFFER_MAX = 128;
 	
 // 	disableMainLoop = false;
 
