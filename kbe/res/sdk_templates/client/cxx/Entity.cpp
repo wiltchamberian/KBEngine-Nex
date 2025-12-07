@@ -186,6 +186,7 @@ void Entity::onSmoothPositionChanged(const KBVector3f &oldValue)
 		pEventData->moveSpeed = velocity_;
 		pEventData->isOnGround = isOnGround();
 		KBENGINE_EVENT_FIRE(KBEventTypes::updatePosition, pEventData);
+	}
 }
 
 void Entity::onDirectionChanged(const KBVector3f& oldValue)

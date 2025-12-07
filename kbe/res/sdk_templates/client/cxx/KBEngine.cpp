@@ -2482,7 +2482,7 @@ void KBEngineApp::_updateVolatileData(ENTITY_ID entityID, float x, float y, floa
 
 
 		KBVector3f oldPos(entityServerPos_.x, entityServerPos_.y, entityServerPos_.z);
-		entity->onSmoothPositionChanged(oldPos);
+		entity.onSmoothPositionChanged(oldPos);
 	}
 
 	if (done)
