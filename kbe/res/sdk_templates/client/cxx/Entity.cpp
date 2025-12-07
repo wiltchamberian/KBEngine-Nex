@@ -113,18 +113,21 @@ void Entity::enterSpace()
 	pEventData->res = KBTEXT("");
 	KBENGINE_EVENT_FIRE(KBEventTypes::onEnterSpace, pEventData);
 	
-	// 要立即刷新表现层对象的位置
-	auto pPosEventData = std::make_shared<UKBEventData_set_position>();
-	// KBPos2UE4Pos(pPosEventData->position, position);
-	pPosEventData->entityID = id();
-	pPosEventData->moveSpeed = velocity_;
-	pPosEventData->isOnGround = isOnGround();
-	KBENGINE_EVENT_FIRE(KBEventTypes::set_position, pPosEventData);
+	// // 要立即刷新表现层对象的位置
+	// auto pPosEventData = std::make_shared<UKBEventData_set_position>();
+	// // KBPos2UE4Pos(pPosEventData->position, position);
+	// pPosEventData->entityID = id();
+	// pPosEventData->moveSpeed = velocity_;
+	// pPosEventData->isOnGround = isOnGround();
+	// KBENGINE_EVENT_FIRE(KBEventTypes::set_position, pPosEventData);
 
-	auto pDirEventData = std::make_shared<UKBEventData_set_direction>();
-	// KBDir2UE4Dir(pDirEventData->direction, direction);
-	pDirEventData->entityID = id();
-	KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pDirEventData);
+	// auto pDirEventData = std::make_shared<UKBEventData_set_direction>();
+	// // KBDir2UE4Dir(pDirEventData->direction, direction);
+	// pDirEventData->entityID = id();
+	// KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pDirEventData);
+
+	onPositionChanged(position);
+	onDirectionChanged(direction);
 }
 
 void Entity::onEnterSpace()

@@ -1796,13 +1796,17 @@ void KBEngineApp::Client_onUpdateBaseDir(MemoryStream& stream)
 	Entity* pEntity = player();
 	if (pEntity && pEntity->isControlled())
 	{
+		
+		KBVector3f old_direction(pEntity->direction.x, pEntity->direction.y, pEntity->direction.z);
+
 		pEntity->direction.Set(roll, pitch, yaw);
 
-		// UKBEventData_set_direction* pEventData = NewObject<UKBEventData_set_direction>();
-		auto pEventData = std::make_shared<UKBEventData_set_direction>();
-		// KBDir2UE4Dir(pEventData->direction, pEntity->direction);
-		pEventData->entityID = pEntity->id();
-		KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pEventData);
+		// auto pEventData = std::make_shared<UKBEventData_set_direction>();
+		// // KBDir2UE4Dir(pEventData->direction, pEntity->direction);
+		// pEventData->entityID = pEntity->id();
+		// KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pEventData);
+
+		pEntity->onDirectionChanged(old_direction);
 
 		pEntity->onUpdateVolatileData();
 	}
@@ -2417,6 +2421,8 @@ void KBEngineApp::_updateVolatileData(ENTITY_ID entityID, float x, float y, floa
 
 	Entity& entity = *(*pEntityFind);
 
+	KBVector3f old_direction(entity.direction.x, entity.direction.y, entity.direction.z);
+
 	// 小于0不设置
 	if (isOnGround >= 0)
 	{
@@ -2446,11 +2452,12 @@ void KBEngineApp::_updateVolatileData(ENTITY_ID entityID, float x, float y, floa
 	bool done = false;
 	if (changeDirection == true)
 	{
-		// UKBEventData_set_direction* pEventData = NewObject<UKBEventData_set_direction>();
-		auto pEventData = std::make_shared<UKBEventData_set_direction>();
-		// KBDir2UE4Dir(pEventData->direction, entity.direction);
-		pEventData->entityID = entity.id();
-		KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pEventData);
+		// auto pEventData = std::make_shared<UKBEventData_set_direction>();
+		// // KBDir2UE4Dir(pEventData->direction, entity.direction);
+		// pEventData->entityID = entity.id();
+		// KBENGINE_EVENT_FIRE(KBEventTypes::set_direction, pEventData);
+
+		entity.onDirectionChanged(old_direction);
 
 		done = true;
 	}
