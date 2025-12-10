@@ -757,7 +757,7 @@ public:
 		utf8Str = str;
 
 		// 2. 写长度
-		uint32_t len = static_cast<uint32_t>(utf8Str.size());
+		uint32_t len = static_cast<uint32_t>(utf8Str.length());
 		(*this) << len;
 
 		// 3. 写内容
