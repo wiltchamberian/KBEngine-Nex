@@ -86,7 +86,11 @@ struct KBString : public KBStringBase
     //     return conv.to_bytes(ws);
     // }
 
-
+    // 返回 UTF-8 字节长度（不含长度前缀）
+    size_t UTF8ByteSize() const
+    {
+        return this->size(); // KBString 已经存储的是 UTF-8 bytes
+    }
     
     static std::string WCharToUTF8(const wchar_t* wstr)
     {
