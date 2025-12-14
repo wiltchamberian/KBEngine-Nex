@@ -168,6 +168,7 @@ void NetworkInterfaceTCP::reset() {
 		socket_ = nullptr;
 	}
 
+	KBE_SAFE_RELEASE(pMessageReader_);
 	KBE_SAFE_RELEASE(pFilter_);
 	connectCB_ = nullptr;
 	connectIP_ = KBTEXT("");
@@ -190,6 +191,7 @@ void NetworkInterfaceTCP::close() {
 		socket_ = nullptr;
 	}
 
+	KBE_SAFE_RELEASE(pMessageReader_);
 	KBE_SAFE_RELEASE(pFilter_);
 	connectCB_ = nullptr;
 	connectIP_ = KBTEXT("");

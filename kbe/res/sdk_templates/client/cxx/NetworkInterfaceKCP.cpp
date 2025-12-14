@@ -169,6 +169,7 @@ void NetworkInterfaceKCP::reset()
 
 	socket_ = nullptr;
 
+	KBE_SAFE_RELEASE(pMessageReader_);
 	KBE_SAFE_RELEASE(pFilter_);
 
 	connectCB_ = nullptr;
@@ -192,6 +193,7 @@ void NetworkInterfaceKCP::close()
 
 	socket_ = nullptr;
 
+	KBE_SAFE_RELEASE(pMessageReader_);
 	KBE_SAFE_RELEASE(pFilter_);
 
 	connectCB_ = nullptr;
