@@ -631,7 +631,7 @@ bool ClientSDKCXX::writeEntityDefsModuleBegin()
 	fileBody() += "}\n\n";
 
 	fileBody() += "Entity* EntityDef::createEntity(int utype)\n";
-	fileBody() += "{\n\tstd::unique_ptr<KBEngine::Entity> pEntity = NULL;\n\n";
+	fileBody() += "{\n\tEntity* pEntity = NULL;\n\n";
 
 	if (numEntity > 0)
 	{
@@ -651,7 +651,7 @@ bool ClientSDKCXX::writeEntityDefsModuleBegin()
 		fileBody() += "\t\tdefault:\n\t\t\tSCREEN_ERROR_MSG(\"EntityDef::createEntity() : entity(%d) not found!\", utype);\n\t\t\tbreak;\n\t};\n\n";
 	}
 
-	fileBody() += "\treturn pEntity.release();\n}\n\n";
+	fileBody() += "\treturn pEntity;\n}\n\n";
 	return true;
 }
 
@@ -3165,7 +3165,7 @@ bool ClientSDKCXX::writeEntityPropertyComponent(ScriptDefModule* pEntityScriptDe
 		pEntityComponentType->pScriptDefModule()->getName());
 
 	//initBody_ += fmt::format("\t{}(new {}()),\n", pPropertyDescription->getName(), pEntityComponentType->pScriptDefModule()->getName());
-	initBody_ += fmt::format("\t{}(static_cast<{}{}*>(EntityComponentFactory::instance().create(\"{}\").release())),\n", 
+	initBody_ += fmt::format("\t{}(static_cast<{}{}*>(EntityComponentFactory::instance().create(\"{}\"))),\n", 
 		pPropertyDescription->getName(), 
 		pEntityComponentType->pScriptDefModule()->getName(),
 		moduleSuffix,
