@@ -226,7 +226,7 @@ void KBEngineApp::destroy()
 
 void KBEngineApp::resetMessages()
 {
-	serverErrs_.Clear();
+	// serverErrs_.Clear();
 
 	Messages::clear();
 	EntityDef::clear();
