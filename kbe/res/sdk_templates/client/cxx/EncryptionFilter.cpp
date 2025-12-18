@@ -59,7 +59,7 @@ void BlowfishFilter::blowfishEncrypt(uint8_t* dst, const uint8_t* src) const {
     uint32_t left = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
     uint32_t right = (src[4] << 24) | (src[5] << 16) | (src[6] << 8) | src[7];
 
-    pBlowFish()->encryptBlock(left, right);
+    pBlowFish()->EncryptBlock(&left,&right);
 
     // 将结果转换回字节数组（大端）
     dst[0] = (left >> 24) & 0xFF;
@@ -78,7 +78,7 @@ void BlowfishFilter::blowfishDecrypt(uint8_t* dst, const uint8_t* src) const {
     uint32_t left = (src[0] << 24) | (src[1] << 16) | (src[2] << 8) | src[3];
     uint32_t right = (src[4] << 24) | (src[5] << 16) | (src[6] << 8) | src[7];
 
-    pBlowFish()->decryptBlock(left, right);
+    pBlowFish()->DecryptBlock(&left, &right);
 
     // 将结果转换回字节数组（大端）
     dst[0] = (left >> 24) & 0xFF;
@@ -128,7 +128,7 @@ bool BlowfishFilter::init() {
     pBlowFish_ = new Blowfish();
 
     if (MIN_KEY_SIZE <= keySize_ && keySize_ <= MAX_KEY_SIZE) {
-        pBlowFish_->setKey(reinterpret_cast<const unsigned char*>(key_.c_str()), keySize_);
+        pBlowFish_->SetKey(reinterpret_cast<const unsigned char*>(key_.c_str()), keySize_);
         isGood_ = true;
     } else {
         ERROR_MSG("BlowfishFilter::init: invalid length %d", keySize_);
