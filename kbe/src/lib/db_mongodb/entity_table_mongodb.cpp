@@ -44,6 +44,9 @@ namespace KBEngine {
 					continue;
 			}
 
+
+			DEBUG_MSG(fmt::format("EntityTableMongodb::initialize: {} {} {}\n", this->tableName(), pdescrs->getName(), pdescrs->getDataType()->getName()));
+
 			EntityTableItem* pETItem = this->createItem(pdescrs->getDataType()->getName(), pdescrs->getDefaultValStr());
 
 			pETItem->pParentTable(this);
@@ -349,6 +352,8 @@ namespace KBEngine {
 
 	EntityTableItem* EntityTableMongodb::createItem(std::string type, std::string defaultVal)
 	{
+
+		// DEBUG_MSG(fmt::format("EntityTableItemMongodb_DIGI::createItem: {} {} {}\n", db_item_name(), (int8)defaultValue_, resultDBID));
 		if (type == "INT8")
 		{
 			int8 v = 0;
@@ -671,6 +676,9 @@ namespace KBEngine {
 			return false;
 		}
 
+		char* json = bson_as_canonical_extended_json(doc, NULL);
+		DEBUG_MSG(fmt::format("queryTable bson doc = {}\n", json));
+		bson_free(json);
 
 		iter = tableFixedOrderItems_.begin();
 		for (; iter != tableFixedOrderItems_.end(); ++iter)
@@ -1248,7 +1256,8 @@ namespace KBEngine {
 
 	bool EntityTableItemMongdb_Component::isSameKey(std::string key)
 	{
-		return key == db_item_name();
+		// return key == db_item_name();
+		return pChildTable_->tableName() == key;
 	}
 
 	bool EntityTableItemMongdb_Component::initialize(const PropertyDescription* pPropertyDescription,
@@ -1257,53 +1266,53 @@ namespace KBEngine {
 		bool ret = EntityTableItemMongodbBase::initialize(
 			pPropertyDescription, pDataType, name);
 
+
 		if (!ret)
 			return false;
 
-		EntityComponentType* pEntityComponentType =
-			const_cast<EntityComponentType*>(
-				static_cast<const EntityComponentType*>(pDataType));
+		
 
-		ScriptDefModule* pComponentScriptDefModule =
-			pEntityComponentType->pScriptDefModule();
+		EntityComponentType* pEntityComponentType = const_cast<EntityComponentType*>(static_cast<const EntityComponentType*>(pDataType));
+		ScriptDefModule* pEntityComponentScriptDefModule = pEntityComponentType->pScriptDefModule();
 
-		EntityTableMongodb* pParentTable =
-			static_cast<EntityTableMongodb*>(this->pParentTable());
+		EntityTableMongodb* pparentTable = static_cast<EntityTableMongodb*>(this->pParentTable());
+		EntityTableMongodb* pTable = new EntityTableMongodb(pparentTable->pEntityTables());
 
-		// MongoDB 中“子表”只是字段结构描述
-		EntityTableMongodb* pTable =
-			new EntityTableMongodb(pParentTable->pEntityTables());
+		std::string tableName = std::string(pparentTable->tableName()) + "_" + name;
 
-		pTable->tableName(name);
+		pTable->tableName(tableName);
 		pTable->isChild(true);
 
-		ScriptDefModule::PROPERTYDESCRIPTION_MAP& descrs =
-			pComponentScriptDefModule->getPersistentPropertyDescriptions();
+		ScriptDefModule* pScriptDefModule = EntityDef::findScriptModule(pparentTable->tableName(), false);
 
-		for (auto& iter : descrs)
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP& pdescrsMap = pEntityComponentScriptDefModule->getPersistentPropertyDescriptions();
+		ScriptDefModule::PROPERTYDESCRIPTION_MAP::const_iterator iter = pdescrsMap.begin();
+
+		for (; iter != pdescrsMap.end(); ++iter)
 		{
-			PropertyDescription* pdescr = iter.second;
+			PropertyDescription* pdescrs = iter->second;
 
-			EntityTableItem* pItem =
-				pParentTable->createItem(
-					pdescr->getDataType()->getName(),
-					pdescr->getDefaultValStr());
-
-			pItem->pParentTable(pTable);
-			pItem->pParentTableItem(this);
-			pItem->utype(pdescr->getUType());
-			pItem->tableName(name);
-
-			if (!pItem->initialize(
-				pdescr,
-				pdescr->getDataType(),
-				pdescr->getName()))
+			if (!pScriptDefModule->hasCell() && pdescrs->hasCell() && !pdescrs->hasBase())
 			{
-				delete pItem;
+				continue;
+			}
+
+			EntityTableItem* pETItem = pparentTable->createItem(pdescrs->getDataType()->getName(), pdescrs->getDefaultValStr());
+
+			pETItem->pParentTable(pparentTable);
+			pETItem->utype(pdescrs->getUType());
+			pETItem->tableName(pTable->tableName());
+			pETItem->pParentTableItem(this);
+
+			bool ret = pETItem->initialize(pdescrs, pdescrs->getDataType(), pdescrs->getName());
+
+			if (!ret)
+			{
+				delete pETItem;
 				return false;
 			}
 
-			pTable->addItem(pItem);
+			pTable->addItem(pETItem);
 		}
 
 		pChildTable_ = pTable;
@@ -1319,13 +1328,41 @@ namespace KBEngine {
 
 	void EntityTableItemMongdb_Component::addToStream(MemoryStream* s, mongodb::DBContext& context, DBID resultDBID, const bson_t* doc)
 	{
+		// if (!pChildTable_)
+		// 	return;
+
+		// bson_iter_t iter;
+		// bool foundData = bson_iter_init_find(&iter, doc, pChildTable_->tableName());
+		//
+		// // 行为完全对齐 MySQL
+		// (*s) << foundData;
+		//
+		// if (!foundData)
+		// 	return;
+		//
+		// KBE_ASSERT(BSON_ITER_HOLDS_DOCUMENT(&iter));
+		//
+		// const uint8_t* buf;
+		// uint32_t len;
+		// bson_iter_document(&iter, &len, &buf);
+		//
+		// bson_t subdoc;
+		// bson_init_static(&subdoc, buf, len);
+		//
+		// /*
+		// - MongoDB 没有子表 DBID
+		// - 这里传父 resultDBID 作为“占位”
+		// - 下层 EntityTableItem 不会真的用它查 MongoDB
+		// */
+		// static_cast<EntityTableMongodb*>(pChildTable_)
+		// 	->addToStream(s, context, resultDBID, doc);
+
 		if (!pChildTable_)
 			return;
 
 		bson_iter_t iter;
-		bool foundData = bson_iter_init_find(&iter, doc, db_item_name());
+		bool foundData = bson_iter_init_find(&iter, doc, pChildTable_->tableName());
 
-		// 行为完全对齐 MySQL
 		(*s) << foundData;
 
 		if (!foundData)
@@ -1340,13 +1377,8 @@ namespace KBEngine {
 		bson_t subdoc;
 		bson_init_static(&subdoc, buf, len);
 
-		/*
-		- MongoDB 没有子表 DBID
-		- 这里传父 resultDBID 作为“占位”
-		- 下层 EntityTableItem 不会真的用它查 MongoDB
-		*/
 		static_cast<EntityTableMongodb*>(pChildTable_)
-			->addToStream(s, context, resultDBID, doc);
+			->addToStream(s, context, resultDBID, &subdoc);
 	}
 
 	void EntityTableItemMongdb_Component::getWriteSqlItem(DBInterface* pdbi, MemoryStream* s,
@@ -1359,13 +1391,13 @@ namespace KBEngine {
 		bson_t child;
 		bson_append_document_begin(
 			doc,
-			db_item_name(),
+			pChildTable_->tableName(),
 			-1,
 			&child);
-
+		
 		static_cast<EntityTableMongodb*>(pChildTable_)
-			->getWriteSqlItem(pdbi, s, context, doc);
-
+			->getWriteSqlItem(pdbi, s, context, &child);
+		
 		bson_append_document_end(doc, &child);
 	}
 
@@ -1463,6 +1495,7 @@ namespace KBEngine {
 	{
 		if (s == NULL)
 			return;
+		DEBUG_MSG(fmt::format("EntityTableItemMongodb_DIGI::getWriteSqlItem: {}\n", db_item_name()));
 
 		mongodb::DBContext::DB_ITEM_DATA* pSotvs = new mongodb::DBContext::DB_ITEM_DATA();
 
@@ -1564,7 +1597,6 @@ namespace KBEngine {
 	template<class T>
 	void EntityTableItemMongodb_DIGIT<T>::addToStream(MemoryStream* s, mongodb::DBContext& context, DBID resultDBID, const bson_t* doc)
 	{
-
 		bson_iter_t iter;
 		bool isdefault = false;
 		if (!bson_iter_init_find(&iter, doc, db_item_name()))
@@ -1577,12 +1609,19 @@ namespace KBEngine {
 			if (isdefault || !BSON_ITER_HOLDS_INT32(&iter))
 			{
 				(*s) << (int8)defaultValue_;
+				DEBUG_MSG(fmt::format("EntityTableItemMongodb_DIGIT22::addToStream: {} {} {}\n", db_item_name(), (int8)defaultValue_, resultDBID));
 				return;
 			}
 
 			int32 v = bson_iter_int32(&iter);
 			int8 vv = static_cast<int8>(v);
 			(*s) << vv;
+
+			DEBUG_MSG(fmt::format("EntityTableItemMongodb_DIGIT::addToStream: {} {} {} {}\n", db_item_name(), v, vv, resultDBID));
+			// int32 v = isdefault ? (int32)defaultValue_ : bson_iter_int32(&iter);
+			// (*s) << v;
+
+			
 		}
 		else if (dataSType_ == "INT16")
 		{
