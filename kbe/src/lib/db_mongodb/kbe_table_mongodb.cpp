@@ -26,7 +26,7 @@ namespace KBEngine {
 
 			bson_destroy(&options);
 		}
-		return true;
+		return true; 
 	}
 
 	bool KBEEntityLogTableMongodb::logEntity(DBInterface* pdbi, const char* ip, uint32 port, DBID dbid,
@@ -215,7 +215,7 @@ namespace KBEngine {
 		bson_t query;
 		bson_init(&query);
 		std::string accountName = "accountName";
-		bson_append_utf8(&query, accountName.c_str(), accountName.size(), name.c_str(), name.size());
+		bson_append_utf8(&query, accountName.c_str(), static_cast<int>(accountName.size()), name.c_str(), static_cast<int>(name.size()));
 
 		DBInterfaceMongodb* pdbiMongodb = static_cast<DBInterfaceMongodb*>(pdbi);
 		pdbiMongodb->updateCollection("kbe_accountinfos", MONGOC_UPDATE_NONE, &query, &doc, NULL);
@@ -231,7 +231,7 @@ namespace KBEngine {
 		bson_t query;
 		bson_init(&query);
 		std::string accountName = "accountName";
-		bson_append_utf8(&query, accountName.c_str(), accountName.size(), name.c_str(), name.size());
+		bson_append_utf8(&query, accountName.c_str(), static_cast<int>(accountName.size()), name.c_str(), static_cast<int>(name.size()));
 
 		DBInterfaceMongodb* pdbiMongodb = static_cast<DBInterfaceMongodb*>(pdbi);
 		// mongoc_cursor_t* cursor = pdbiMongodb->collectionFind("kbe_accountinfos", MONGOC_QUERY_NONE, 0, 0, 0, &query, NULL, NULL);
@@ -289,7 +289,7 @@ namespace KBEngine {
 		bson_t query;
 		bson_init(&query);
 		std::string accountName = "accountName";
-		bson_append_utf8(&query, accountName.c_str(), accountName.size(), name.c_str(), name.size());
+		bson_append_utf8(&query, accountName.c_str(), static_cast<int>(accountName.size()), name.c_str(), static_cast<int>(name.size()));
 
 		DBInterfaceMongodb* pdbiMongodb = static_cast<DBInterfaceMongodb*>(pdbi);
 		// mongoc_cursor_t* cursor = pdbiMongodb->collectionFind("kbe_accountinfos", MONGOC_QUERY_NONE, 0, 0, 0, &query, NULL, NULL);
@@ -377,12 +377,12 @@ namespace KBEngine {
 		bson_init(&doc);
 		bson_t child;
 		bson_append_document_begin(&doc, "$set", -1, &child);
-		bson_append_utf8(&child, "password", (int)strlen("password"), password.c_str(), password.size());
+		bson_append_utf8(&child, "password", (int)strlen("password"), password.c_str(), static_cast<int>(password.size()));
 		bson_append_document_end(&doc, &child);
 
 		bson_t query;
 		bson_init(&query);
-		bson_append_utf8(&query, "entityDBID", (int)strlen("entityDBID"), name.c_str(), name.size());
+		bson_append_utf8(&query, "entityDBID", static_cast<int>(strlen("entityDBID")), name.c_str(), static_cast<int>(name.size()));
 
 		DBInterfaceMongodb* pdbiMongodb = static_cast<DBInterfaceMongodb*>(pdbi);
 		pdbiMongodb->updateCollection("kbe_accountinfos", MONGOC_UPDATE_NONE, &query, &doc, NULL);
@@ -398,11 +398,11 @@ namespace KBEngine {
 	{
 		bson_t options;
 		bson_init(&options);
-		bson_append_utf8(&options, "accountName", (int)strlen("accountName"), info.name.c_str(), info.name.size());
-		std::string password = KBE_MD5::getDigest(info.password.data(), info.password.length());
-		bson_append_utf8(&options, "password", (int)strlen("password"), password.c_str(), password.size());
-		bson_append_utf8(&options, "bindata", (int)strlen("bindata"), info.datas.data(), info.datas.size());
-		bson_append_utf8(&options, "email", (int)strlen("email"), info.email.c_str(), info.email.size());
+		bson_append_utf8(&options, "accountName", (int)strlen("accountName"), info.name.c_str(), static_cast<int>(info.name.size()));
+		std::string password = KBE_MD5::getDigest(info.password.data(), static_cast<int>(info.password.length()));
+		bson_append_utf8(&options, "password", (int)strlen("password"), password.c_str(), static_cast<int>(password.size()));
+		bson_append_utf8(&options, "bindata", (int)strlen("bindata"), info.datas.data(), static_cast<int>(info.datas.size()));
+		bson_append_utf8(&options, "email", (int)strlen("email"), info.email.c_str(), static_cast<int>(info.email.size()));
 		BSON_APPEND_INT64(&options, "entityDBID", info.dbid);
 		BSON_APPEND_INT32(&options, "flags", info.flags);
 		BSON_APPEND_INT64(&options, "deadline", info.deadline);

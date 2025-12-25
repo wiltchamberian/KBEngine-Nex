@@ -555,7 +555,7 @@ namespace KBEngine {
 		同步entity表到数据库中
 		*/
 		virtual bool syncToDB(DBInterface* pdbi);
-
+		 
 		/**
 		同步表索引
 		*/

@@ -242,25 +242,25 @@ namespace KBEngine {
 	{
 		KBE_ASSERT(tableName != NULL);
 
-		DEBUG_MSG(fmt::format("DBInterfaceMongodb::dropEntityTableFromDB: {}.\n", tableName));
+		// DEBUG_MSG(fmt::format("DBInterfaceMongodb::dropEntityTableFromDB: {}.\n", tableName));
 
 		return true; 
-		char sql_str[MAX_BUF];
-		kbe_snprintf(sql_str, MAX_BUF, "Drop table if exists %s;", tableName);
-		return query(sql_str, strlen(sql_str));
+		// char sql_str[MAX_BUF];
+		// kbe_snprintf(sql_str, MAX_BUF, "Drop table if exists %s;", tableName);
+		// return query(sql_str, strlen(sql_str));
 	}
 
 	bool DBInterfaceMongodb::dropEntityTableItemFromDB(const char* tableName, const char* tableItemName)
 	{
 		KBE_ASSERT(tableName != NULL && tableItemName != NULL);
 
-		DEBUG_MSG(fmt::format("DBInterfaceMongodb::dropEntityTableItemFromDB: {} {}.\n",
-			tableName, tableItemName));
+		// DEBUG_MSG(fmt::format("DBInterfaceMongodb::dropEntityTableItemFromDB: {} {}.\n",
+		// 	tableName, tableItemName));
 
 		return true;
-		char sql_str[MAX_BUF];
-		kbe_snprintf(sql_str, MAX_BUF, "alter table %s drop column %s;", tableName, tableItemName);
-		return query(sql_str, strlen(sql_str));
+		// char sql_str[MAX_BUF];
+		// kbe_snprintf(sql_str, MAX_BUF, "alter table %s drop column %s;", tableName, tableItemName);
+		// return query(sql_str, strlen(sql_str));
 	}
 
 	bool DBInterfaceMongodb::query(const char* cmd, uint32 size, bool printlog, MemoryStream* result)
@@ -308,15 +308,15 @@ namespace KBEngine {
 			}
 		}
 
-		int index = strCommand.find_first_of(".");
+		std::size_t index = strCommand.find_first_of(".");
 		std::string str_tableName = strCommand.substr(0, index);
 
 		std::string strQuerCommand = strCommand.substr(index + 1, strCommand.length());
 
-		int k = strQuerCommand.find_first_of("(");
+		std::size_t k = strQuerCommand.find_first_of("(");
 		std::string str_operationType = strQuerCommand.substr(0, k);
 
-		int h = strQuerCommand.length();
+		std::size_t h = strQuerCommand.length();
 
 		std::string t_command = strQuerCommand.substr(k + 1, h - k - 2);
 
@@ -648,7 +648,7 @@ namespace KBEngine {
 		int skip = 0;
 		int batchSize = 0;
 		int options = 0;
-		int size = strcmd.size();
+		std::size_t size = strcmd.size();
 		query = strcmd[0];
 
 		if (size >= 2)
@@ -719,7 +719,7 @@ namespace KBEngine {
 		std::vector<char*>::iterator it;
 		for (it = value.begin(); it != value.end(); it++)
 		{
-			result->appendBlob(*it, strlen(*it));
+			result->appendBlob(*it, static_cast<KBEngine::ArraySize>(strlen(*it)));
 			bson_free(*it);
 		}
 
@@ -744,7 +744,7 @@ namespace KBEngine {
 		bool successFlag = false;
 		std::string query = "";
 		std::string update = "";
-		int size = strcmd.size();
+		std::size_t size = strcmd.size();
 		query = strcmd[0];
 
 		bool upsert = false;
@@ -805,7 +805,7 @@ namespace KBEngine {
 		bool successFlag = false;
 		std::string query = "";
 		bool justOne = false;
-		int size = strcmd.size();
+		std::size_t size = strcmd.size();
 		query = strcmd[0];
 
 		if (size >= 2)
@@ -843,7 +843,7 @@ namespace KBEngine {
 		bool successFlag = false;
 		std::string query = "";
 		bool ordered = true;
-		int size = strcmd.size();
+		std::size_t size = strcmd.size();
 		query = strcmd[0];
 
 		if (size >= 2)
@@ -923,7 +923,7 @@ namespace KBEngine {
 		if (r)
 		{
 			char* str = bson_as_json(&reply, NULL);
-			result->appendBlob(str, strlen(str));
+			result->appendBlob(str, static_cast<KBEngine::ArraySize>(strlen(str)));
 			bson_free(str);
 		}
 
@@ -939,7 +939,7 @@ namespace KBEngine {
 		std::vector<std::string> result;
 		char* queue = new char[512];
 
-		int index = value.length();
+		std::size_t index = value.length();
 		int whole = 0; //为0就等待下一个'，'号
 		int wpos = 0; //写入的位置
 		for (int i = 0; i < index; i++)

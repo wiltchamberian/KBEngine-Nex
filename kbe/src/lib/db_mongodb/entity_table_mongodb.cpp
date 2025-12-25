@@ -1183,7 +1183,7 @@ namespace KBEngine {
 				if (pChildTable_->tableName() == iter->first)
 				{
 					ArraySize size = 0;
-					std::list<bson_t*> bsonlist;
+					std::list<bson_t> bsonlist;
 
 					//先取数据
 					while (true)
@@ -1199,8 +1199,8 @@ namespace KBEngine {
 						uint32_t len;
 						bson_iter_document(&array_iter, &len, &buf);
 
-						bson_t* rec = new bson_t();
-						bson_init_static(rec, buf, len);
+						bson_t rec;
+						bson_init_static(&rec, buf, len);
 						bsonlist.push_back(rec);
 
 						size++;
@@ -1209,12 +1209,20 @@ namespace KBEngine {
 					//ArraySize size = (ArraySize)iter->second->dbids[resultDBID].size();
 					(*s) << size;
 
-					while (!bsonlist.empty())
-					{
-						static_cast<EntityTableMongodb*>(pChildTable_)->addToStream(s, *iter->second.get(), 0, bsonlist.front());
+					// while (!bsonlist.empty())
+					// {
+					// 	static_cast<EntityTableMongodb*>(pChildTable_)->addToStream(s, *iter->second.get(), 0, bsonlist.front());
+					//
+					// 	// bson_destroy(bsonlist.front());
+					// 	// bsonlist.pop_front();
+					// }
 
-						bson_destroy(bsonlist.front());
-						bsonlist.pop_front();
+
+					// 遍历每个 bson_t
+					for (auto& rec : bsonlist)
+					{
+						static_cast<EntityTableMongodb*>(pChildTable_)->addToStream(s, *iter->second.get(), 0, &rec);
+						// 不需要 bson_destroy(rec)，因为使用了 bson_init_static
 					}
 
 					return;
@@ -1768,7 +1776,7 @@ namespace KBEngine {
 		pSotvs->sqlkey = db_item_name();
 		context.items.push_back(KBEShared_ptr<mongodb::DBContext::DB_ITEM_DATA>(pSotvs));
 
-		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), val.length());
+		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), static_cast<int>(val.length()));
 	}
 
 	void EntityTableItemMongodb_STRING::getReadSqlItem(mongodb::DBContext& context)
@@ -1823,7 +1831,7 @@ namespace KBEngine {
 		pSotvs->sqlkey = db_item_name();
 		context.items.push_back(KBEShared_ptr<mongodb::DBContext::DB_ITEM_DATA>(pSotvs));
 
-		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), val.length());
+		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), static_cast<int>(val.length())); 
 	}
 
 	void EntityTableItemMongodb_UNICODE::getReadSqlItem(mongodb::DBContext& context)
@@ -1841,14 +1849,14 @@ namespace KBEngine {
 		if (!bson_iter_init_find(&iter, doc, db_item_name()) || !BSON_ITER_HOLDS_UTF8(&iter))
 		{
 			//如果没有找到数据，需要做兼容性处理
-			(*s).appendBlob(defaultValue_.data(), defaultValue_.size());
+			(*s).appendBlob(defaultValue_.data(), static_cast<ArraySize>(defaultValue_.size()));
 			return;
 		}
 
 		uint32_t len = 0;
 		const char* value = bson_iter_utf8(&iter, &len);
 		std::string datas(value, len);
-		(*s).appendBlob(datas.data(), datas.size());
+		(*s).appendBlob(datas.data(), static_cast<ArraySize>(datas.size()));
 	}
 
 	//-------------------------------------------------------------------------------------
@@ -1877,7 +1885,7 @@ namespace KBEngine {
 		pSotvs->sqlkey = db_item_name();
 		context.items.push_back(KBEShared_ptr<mongodb::DBContext::DB_ITEM_DATA>(pSotvs));
 
-		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), val.length());
+		bson_append_utf8(doc, pSotvs->sqlkey, (int)strlen(pSotvs->sqlkey), val.c_str(), static_cast<int>(val.length()));
 	}
 
 	void EntityTableItemMongodb_BLOB::getReadSqlItem(mongodb::DBContext& context)
@@ -1894,14 +1902,14 @@ namespace KBEngine {
 		if (!bson_iter_init_find(&iter, doc, db_item_name()) || !BSON_ITER_HOLDS_UTF8(&iter))
 		{
 			//如果没有找到数据，需要做兼容性处理
-			(*s).appendBlob(defaultValue_.data(), defaultValue_.size());
+			(*s).appendBlob(defaultValue_.data(), static_cast<ArraySize>(defaultValue_.size()));
 			return;
 		}
 
 		uint32_t len = 0;
 		const char* value = bson_iter_utf8(&iter, &len);
 		std::string datas(value, len);
-		(*s).appendBlob(datas.data(), datas.size());
+		(*s).appendBlob(datas.data(), static_cast<ArraySize>(datas.size()));
 
 	}
 
@@ -1931,7 +1939,7 @@ namespace KBEngine {
 		pSotvs->sqlkey = db_item_name();
 		context.items.push_back(KBEShared_ptr<mongodb::DBContext::DB_ITEM_DATA>(pSotvs));
 
-		BSON_APPEND_BINARY(doc, pSotvs->sqlkey, BSON_SUBTYPE_BINARY, (const uint8_t*)val.c_str(), val.length());
+		BSON_APPEND_BINARY(doc, pSotvs->sqlkey, BSON_SUBTYPE_BINARY, reinterpret_cast<const uint8_t*>(val.c_str()), static_cast<uint32_t>(val.length()));
 	}
 
 	void EntityTableItemMongodb_PYTHON::getReadSqlItem(mongodb::DBContext& context)
@@ -1948,7 +1956,7 @@ namespace KBEngine {
 		if (!bson_iter_init_find(&iter, doc, db_item_name()) || !BSON_ITER_HOLDS_BINARY(&iter))
 		{
 			//如果没有找到数据，需要做兼容性处理
-			(*s).appendBlob(defaultValue_.data(), defaultValue_.size());
+			(*s).appendBlob(defaultValue_.data(), static_cast<ArraySize>(defaultValue_.size()));
 			return;
 		}
 

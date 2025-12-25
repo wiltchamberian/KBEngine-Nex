@@ -167,7 +167,7 @@ namespace KBEngine
 		bool hasLostConnection_;
 		bool inTransaction_;
 		mongodb::DBTransaction lock_;
-		const char* strError;
+		const char* strError; 
 
 
 		static bool                  s_mongocInited_;
