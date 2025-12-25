@@ -99,7 +99,25 @@ namespace KBEngine {
 
 	static uint32 watcher_json_function()
 	{
-		return watcher_query("json_function");
+		return watcher_query("JSON_FUNCTION");
+	}
+
+
+
+	static uint32 watcher_select_index()
+	{
+		return watcher_query("SELECT_INDEX");
+	}
+
+
+	static uint32 watcher_create_index()
+	{
+		return watcher_query("CREATE_INDEX");
+	}
+
+	static uint32 watcher_drop_index()
+	{
+		return watcher_query("DROP_INDEX");
 	}
 
 
@@ -116,6 +134,9 @@ namespace KBEngine {
 		WATCH_OBJECT("db_querys/insert", &KBEngine::watcher_insert);
 		WATCH_OBJECT("db_querys/update", &KBEngine::watcher_update);
 		WATCH_OBJECT("db_querys/json_function", &KBEngine::watcher_json_function);
+		WATCH_OBJECT("db_querys/select_index", &KBEngine::watcher_select_index);
+		WATCH_OBJECT("db_querys/create_index", &KBEngine::watcher_create_index);
+		WATCH_OBJECT("db_querys/drop_index", &KBEngine::watcher_drop_index);
 	}
 
 	DBInterfaceMongodb::DBInterfaceMongodb(const char* name) :
@@ -378,28 +399,24 @@ namespace KBEngine {
 
 		if (str_operationType == "find")
 		{
-			querystatistics("SELECT");
 			isFindOp = true;
 			resultFlag = executeFindCommand(result, strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "update")
 		{
-			querystatistics("UPDATE");
 			resultFlag = executeUpdateCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "remove")
 		{
-			querystatistics("DELETE");
 			resultFlag = executeRemoveCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "insert")
 		{
-			querystatistics("INSERT");
+			
 			resultFlag = executeInsertCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else
 		{
-			querystatistics("JSON_FUNCTION");
 			strArrayCmd.clear();
 			resultFlag = executeFunctionCommand(result, strCommand);
 		}
@@ -547,6 +564,8 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::createCollection(const char* tableName)
 	{
+		querystatistics("CREATE");
+
 		bson_t options;
 		bson_error_t  error;
 
@@ -566,6 +585,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::insertCollection(const char* tableName, mongoc_insert_flags_t flags, const bson_t* document, const mongoc_write_concern_t* write_concern)
 	{
+		querystatistics("INSERT");
 		bson_error_t  error;
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 		bool r = mongoc_collection_insert(collection, flags, document, write_concern, &error);
@@ -582,6 +602,7 @@ namespace KBEngine {
 
 	std::unique_ptr<MongoCursorGuard> DBInterfaceMongodb::collectionFind(const char* tableName, mongoc_query_flags_t flags, uint32_t skip, uint32_t limit, uint32_t  batch_size, const bson_t* query, const bson_t* fields, const mongoc_read_prefs_t* read_prefs)
 	{
+		querystatistics("SELECT");
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 		mongoc_cursor_t* cursor = mongoc_collection_find(collection, flags, skip, limit, batch_size, query, fields, read_prefs);
 
@@ -595,6 +616,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::updateCollection(const char* tableName, mongoc_update_flags_t uflags, const bson_t* selector, const bson_t* update, const mongoc_write_concern_t* write_concern)
 	{
+		querystatistics("UPDATE");
 		bson_error_t  error;
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 		bool r = mongoc_collection_update(collection, uflags, selector, update, write_concern, &error);
@@ -610,6 +632,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::collectionRemove(const char* tableName, mongoc_remove_flags_t flags, const bson_t* selector, const mongoc_write_concern_t* write_concern)
 	{
+		querystatistics("DELETE");
 		bson_error_t  error;
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 		bool r = mongoc_collection_remove(collection, flags, selector, write_concern, &error);
@@ -625,6 +648,7 @@ namespace KBEngine {
 
 	std::unique_ptr<MongoCursorGuard> DBInterfaceMongodb::collectionFindIndexes(const char* tableName)
 	{
+		querystatistics("SELECT_INDEX");
 		bson_error_t error = { 0 };
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 		mongoc_cursor_t* cursor = mongoc_collection_find_indexes(collection, &error);
@@ -639,6 +663,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::collectionCreateIndex(const char* tableName, const bson_t* keys, const mongoc_index_opt_t* opt)
 	{
+		querystatistics("CREATE_INDEX");
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 
 		bson_error_t error;
@@ -655,6 +680,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::collectionDropIndex(const char* tableName, const char* index_name)
 	{
+		querystatistics("DROP_INDEX");
 		mongoc_collection_t* collection = mongoc_database_get_collection(database, tableName);
 
 		bson_error_t  error;
@@ -684,6 +710,7 @@ namespace KBEngine {
 
 	bool DBInterfaceMongodb::extuteFunction(const bson_t* command, const mongoc_read_prefs_t* read_prefs, bson_t* reply)
 	{
+		querystatistics("JSON_FUNCTION");
 		bson_error_t  error;
 		bool r = mongoc_database_command_simple(database, command, read_prefs, reply, &error);
 		if (!r)
