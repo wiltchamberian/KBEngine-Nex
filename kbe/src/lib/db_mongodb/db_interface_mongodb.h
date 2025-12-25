@@ -13,6 +13,7 @@
 // #endif
 #include "mongoc.h"
 #include <bson.h>
+#include <unordered_set>
 
 class MongoCursorGuard;
 
@@ -158,6 +159,8 @@ namespace KBEngine
 
 		bool collectionDropIndex(const char* tableName, const char* index_name);
 
+		static bool getTopLevelKey(const bson_t* doc, std::string& key);
+
 	protected:
 		mongoc_client_t* _pMongoClient;
 		mongoc_database_t* database;
@@ -168,5 +171,8 @@ namespace KBEngine
 
 
 		static bool                  s_mongocInited_;
+
+		static const std::vector<std::string> kDangerTokens;
+		static const std::unordered_set<std::string> kForbiddenCommands;
 	};
 }
