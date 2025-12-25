@@ -292,6 +292,7 @@ namespace KBEngine {
 
 		bool isFindOp = false; //判断是否是查询操作
 		bool resultFlag = false;
+
 		if (str_operationType == "find")
 		{
 			isFindOp = true;
@@ -635,7 +636,7 @@ namespace KBEngine {
 		if (!q)
 		{
 			strError = error.message;
-			ERROR_MSG(fmt::format("{}\n", error.message));
+			ERROR_MSG(fmt::format(" DBInterfaceMongodb::executeFindCommand:query error: {}\n", error.message));
 			return false;
 		}
 
@@ -646,7 +647,7 @@ namespace KBEngine {
 			if (!f)
 			{
 				strError = error.message;
-				ERROR_MSG(fmt::format("{}\n", error.message));
+				ERROR_MSG(fmt::format(" DBInterfaceMongodb::executeFindCommand:field error: {}\n", error.message));
 				return false;
 			}
 		}
