@@ -10,7 +10,7 @@
     "apr",
     "apr-util",
     "curl",
-    "mongo-cxx-driver",
+    "mongo-c-driver",
     {
       "name": "jemalloc",
       "platform": "!windows"

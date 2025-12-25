@@ -135,6 +135,7 @@ lock_(NULL, false),
 characterSet_(characterSet),
 collation_(collation)
 {
+	DEBUG_MSG(fmt::format("DBInterfaceMysql::DBInterfaceMysql: {}\n", name));
 	lock_.pdbi(this);
 }
 
