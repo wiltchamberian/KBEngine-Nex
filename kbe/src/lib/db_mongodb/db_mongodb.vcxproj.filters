@@ -36,9 +36,6 @@
     <ClCompile Include="kbe_table_mongodb.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="mongodb_watcher.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h">
@@ -60,15 +57,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="kbe_table_mongodb.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mongodb_helper.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mongodb_watcher.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mongo.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="mongo_cursor_guard.h">

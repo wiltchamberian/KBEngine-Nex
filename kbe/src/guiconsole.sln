@@ -112,6 +112,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "guiconsole", "server\tools\
 		{78933A1C-A62A-4ECD-91E5-299D2FDF5D33} = {78933A1C-A62A-4ECD-91E5-299D2FDF5D33}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "db_mongodb", "lib\db_mongodb\db_mongodb.vcxproj", "{E6EF5CFC-F447-477E-B546-2DDF45805D54}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win64 = Debug|Win64
@@ -202,6 +204,10 @@ Global
 		{78EE8B08-4E07-4C07-9592-BC4D09503155}.Debug|Win64.Build.0 = Debug|x64
 		{78EE8B08-4E07-4C07-9592-BC4D09503155}.Release|Win64.ActiveCfg = Release|x64
 		{78EE8B08-4E07-4C07-9592-BC4D09503155}.Release|Win64.Build.0 = Release|x64
+		{E6EF5CFC-F447-477E-B546-2DDF45805D54}.Debug|Win64.ActiveCfg = Debug|x64
+		{E6EF5CFC-F447-477E-B546-2DDF45805D54}.Debug|Win64.Build.0 = Debug|x64
+		{E6EF5CFC-F447-477E-B546-2DDF45805D54}.Release|Win64.ActiveCfg = Release|x64
+		{E6EF5CFC-F447-477E-B546-2DDF45805D54}.Release|Win64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -228,6 +234,7 @@ Global
 		{A04109A7-46C9-42F9-AB29-8E3D84450172} = {C57D8946-CC54-4360-89FA-DAC04E93423A}
 		{70E890EA-9496-4F7C-B903-5FCF87A73AC4} = {C57D8946-CC54-4360-89FA-DAC04E93423A}
 		{78EE8B08-4E07-4C07-9592-BC4D09503155} = {54612744-437F-4400-AE6C-BE4CD68C8507}
+		{E6EF5CFC-F447-477E-B546-2DDF45805D54} = {C57D8946-CC54-4360-89FA-DAC04E93423A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {98BC2259-260D-4CB1-B4A6-FAAA2DC3E91B}

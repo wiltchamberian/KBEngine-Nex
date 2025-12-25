@@ -38,6 +38,31 @@ namespace KBEngine {
 		"fsync"
 	};
 
+
+	static void querystatistics(const char* strCommand)
+	{
+		std::string op(strCommand);
+		
+		if (op.empty())
+			return;
+
+		std::transform(op.begin(), op.end(), op.begin(), toupper);
+
+		_g_logMutex.lockMutex();
+
+		KBEUnordered_map< std::string, uint32 >::iterator iter = g_querystatistics.find(op);
+		if (iter == g_querystatistics.end())
+		{
+			g_querystatistics[op] = 1;
+		}
+		else
+		{
+			iter->second += 1;
+		}
+
+		_g_logMutex.unlockMutex();
+	}
+
 	static uint32 watcher_query(std::string cmd)
 	{
 		KBEngine::thread::ThreadGuard tg(&_g_logMutex);
@@ -51,10 +76,32 @@ namespace KBEngine {
 		return 0;
 	}
 
+
 	static uint32 watcher_select()
 	{
 		return watcher_query("SELECT");
 	}
+
+	static uint32 watcher_delete()
+	{
+		return watcher_query("DELETE");
+	}
+
+	static uint32 watcher_insert()
+	{
+		return watcher_query("INSERT");
+	}
+
+	static uint32 watcher_update()
+	{
+		return watcher_query("UPDATE");
+	}
+
+	static uint32 watcher_json_function()
+	{
+		return watcher_query("json_function");
+	}
+
 
 	static void initializeWatcher()
 	{
@@ -65,6 +112,10 @@ namespace KBEngine {
 		_g_debug = g_kbeSrvConfig.getDBMgr().debugDBMgr;
 
 		WATCH_OBJECT("db_querys/select", &KBEngine::watcher_select);
+		WATCH_OBJECT("db_querys/delete", &KBEngine::watcher_delete);
+		WATCH_OBJECT("db_querys/insert", &KBEngine::watcher_insert);
+		WATCH_OBJECT("db_querys/update", &KBEngine::watcher_update);
+		WATCH_OBJECT("db_querys/json_function", &KBEngine::watcher_json_function);
 	}
 
 	DBInterfaceMongodb::DBInterfaceMongodb(const char* name) :
@@ -327,23 +378,28 @@ namespace KBEngine {
 
 		if (str_operationType == "find")
 		{
+			querystatistics("SELECT");
 			isFindOp = true;
 			resultFlag = executeFindCommand(result, strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "update")
 		{
+			querystatistics("UPDATE");
 			resultFlag = executeUpdateCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "remove")
 		{
+			querystatistics("DELETE");
 			resultFlag = executeRemoveCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else if (str_operationType == "insert")
 		{
+			querystatistics("INSERT");
 			resultFlag = executeInsertCommand(strArrayCmd, str_tableName.c_str());
 		}
 		else
 		{
+			querystatistics("JSON_FUNCTION");
 			strArrayCmd.clear();
 			resultFlag = executeFunctionCommand(result, strCommand);
 		}
