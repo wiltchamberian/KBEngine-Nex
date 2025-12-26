@@ -1017,86 +1017,136 @@ namespace KBEngine {
 	}
 
 	//字符串分割
+	// std::vector<std::string> DBInterfaceMongodb::splitParameter(std::string value)
+	// {
+	// 	std::vector<std::string> result;
+	// 	char* queue = new char[512];
+	//
+	// 	std::size_t index = value.length();
+	// 	int whole = 0; //为0就等待下一个'，'号
+	// 	int wpos = 0; //写入的位置
+	// 	for (int i = 0; i < index; i++)
+	// 	{
+	// 		switch (value[i])
+	// 		{
+	// 		case '{':
+	// 		{
+	// 			queue[wpos] = value[i];
+	// 			wpos++;
+	// 			whole++;
+	// 			break;
+	// 		}
+	// 		case '}':
+	// 		{
+	// 			queue[wpos] = value[i];
+	// 			wpos++;
+	// 			whole--;
+	// 			break;
+	// 		}
+	// 		case '[':
+	// 		{
+	// 			queue[wpos] = value[i];
+	// 			wpos++;
+	// 			whole++;
+	// 			break;
+	// 		}
+	// 		case ']':
+	// 		{
+	// 			queue[wpos] = value[i];
+	// 			wpos++;
+	// 			whole--;
+	// 			break;
+	// 		}
+	// 		case ',':
+	// 		{
+	// 			if (whole == 0)
+	// 			{
+	// 				std::string part(queue, wpos);
+	// 				wpos = 0; //重置
+	//
+	// 				result.push_back(part);
+	// 			}
+	// 			else
+	// 			{
+	// 				queue[wpos] = value[i];
+	// 				wpos++;
+	// 			}
+	// 			break;
+	// 		}
+	// 		case ' ':
+	// 			break;
+	// 		default:
+	// 		{
+	// 			queue[wpos] = value[i];
+	// 			wpos++;
+	// 			break;
+	// 		}
+	// 		}
+	//
+	// 	}
+	//
+	// 	//最后一个存储
+	// 	if (whole == 0)
+	// 	{
+	// 		std::string part(queue, wpos);
+	// 		wpos = 0; //重置
+	//
+	// 		result.push_back(part);
+	// 	}
+	//
+	// 	delete[] queue;
+	//
+	// 	return result;
+	// }
 	std::vector<std::string> DBInterfaceMongodb::splitParameter(std::string value)
 	{
 		std::vector<std::string> result;
-		char* queue = new char[512];
+		std::string temp;
+		int whole = 0; // { 或 [ 的嵌套计数
 
-		std::size_t index = value.length();
-		int whole = 0; //为0就等待下一个'，'号
-		int wpos = 0; //写入的位置
-		for (int i = 0; i < index; i++)
+		for (size_t i = 0; i < value.length(); i++)
 		{
-			switch (value[i])
+			char ch = value[i];
+			switch (ch)
 			{
 			case '{':
-			{
-				queue[wpos] = value[i];
-				wpos++;
-				whole++;
-				break;
-			}
-			case '}':
-			{
-				queue[wpos] = value[i];
-				wpos++;
-				whole--;
-				break;
-			}
 			case '[':
-			{
-				queue[wpos] = value[i];
-				wpos++;
+				temp += ch;
 				whole++;
 				break;
-			}
+			case '}':
 			case ']':
-			{
-				queue[wpos] = value[i];
-				wpos++;
+				temp += ch;
 				whole--;
 				break;
-			}
 			case ',':
-			{
 				if (whole == 0)
 				{
-					std::string part(queue, wpos);
-					wpos = 0; //重置
-
-					result.push_back(part);
+					if (!temp.empty())
+						result.push_back(temp);
+					temp.clear();
 				}
 				else
 				{
-					queue[wpos] = value[i];
-					wpos++;
+					temp += ch;
 				}
 				break;
-			}
 			case ' ':
+				// 可选择保留空格，或者跳过
+				temp += ch;
 				break;
 			default:
-			{
-				queue[wpos] = value[i];
-				wpos++;
+				temp += ch;
 				break;
 			}
-			}
-
 		}
 
-		//最后一个存储
-		if (whole == 0)
-		{
-			std::string part(queue, wpos);
-			wpos = 0; //重置
-
-			result.push_back(part);
-		}
-
-		delete[] queue;
+		if (!temp.empty())
+			result.push_back(temp);
 
 		return result;
 	}
+
+
 
 }
