@@ -1,14 +1,14 @@
-﻿// Copyright 2008-2018 Yolo Technologies, Inc. All Rights Reserved. https://www.comblockengine.com
+// Copyright 2008-2018 Yolo Technologies, Inc. All Rights Reserved. https://www.comblockengine.com
 
 #ifndef KBE_NAVIGATEMESHHANDLE_H
 #define KBE_NAVIGATEMESHHANDLE_H
 
 #include "navigation/navigation_handle.h"
 
-#include "DetourNavMeshBuilder.h"
-#include "DetourNavMeshQuery.h"
-#include "DetourCommon.h"
-#include "DetourNavMesh.h"
+#include "recastnavigation/DetourNavMeshBuilder.h"
+#include "recastnavigation/DetourNavMeshQuery.h"
+#include "recastnavigation/DetourCommon.h"
+#include "recastnavigation/DetourNavMesh.h"
 
 namespace KBEngine {
 

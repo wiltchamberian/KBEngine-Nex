@@ -11,6 +11,7 @@
     "apr-util",
     "curl",
     "mongo-c-driver",
+    "recastnavigation",
     {
       "name": "jemalloc",
       "platform": "!windows"
