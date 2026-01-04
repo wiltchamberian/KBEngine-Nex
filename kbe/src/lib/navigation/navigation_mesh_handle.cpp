@@ -422,7 +422,7 @@ NavigationHandle* NavMeshHandle::create(std::string resPath, const std::map< int
 	if(params.size() == 0)
 	{
 		std::vector<std::wstring> results;
-		Resmgr::getSingleton().listPathRes(wspath, L"navmesh", results);
+		Resmgr::getSingleton().listPathRes(wspath, L"bin", results);
 
 		if(results.size() == 0)
 		{
