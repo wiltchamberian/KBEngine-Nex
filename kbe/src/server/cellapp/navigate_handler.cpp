@@ -190,8 +190,8 @@ namespace KBEngine {
             pEntity->onMove(pController_->id(), layer_, currPosBackup, pyuserarg_);
         }
 
-        DEBUG_MSG(fmt::format("NavigateHandler::update: entityID={},isDis={} pos=({}, {}, {}, desc=({},{},{}))",
-            pController_->pEntity()->id(), isDestroyed_, nextPos.x, nextPos.y, nextPos.z, destPos_.x, destPos_.y, destPos_.z));
+        // DEBUG_MSG(fmt::format("NavigateHandler::update: entityID={},isDis={} pos=({}, {}, {}, dest=({},{},{}))",
+        //     pController_->pEntity()->id(), isDestroyed_, nextPos.x, nextPos.y, nextPos.z, destPos_.x, destPos_.y, destPos_.z));
 
         if (isDestroyed_)
         { 
