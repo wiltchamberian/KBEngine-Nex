@@ -6,10 +6,18 @@
 由于本次更新中，navmesh属于底层破坏性更新，所以直接调整为一个大版本更新
 
 - [feat] recastnavigation升级，并改为由vcpkg导入 [Issue #74](https://github.com/KBEngineLab/KBEngine-Nex/issues/74)
-  - 重要：navmesh升级后，为了保持多客户端兼容和未来插件升级兼容，由之前的左手坐标系（Unity）转换为官方支持的右手坐标系（Recast Navigation / Three.js）
-  - 客户端侧所有的坐标同步都要做对应手系的翻转，比如unity中x翻转，（gameEntity.position = new Vector3(-entity.position.x,entity.position.y,entity.position.z);）
-  - 同理因为手系翻转，yaw也要做翻转（gameEntity.direction = new Vector3(entity.direction.y, -entity.direction.z, entity.direction.x);）
-  - xyz分别为roll、pitch、yaw
+  - 重要：navmesh升级后，为了保持多客户端兼容和未来插件升级兼容，由之前的左手坐标系转换为官方支持的-z右手坐标系（Recast Navigation / Three.js），KBE层是+Z的右手坐标
+  - 客户端侧所有的坐标同步都要做对应手系的翻转
+  - unity:
+    - unity中x/z翻转（根据模型导出手系决定），（gameEntity.position = new Vector3(-entity.position.x,entity.position.y,entity.position.z);）
+    - 同理因为手系翻转，yaw也要做翻转（gameEntity.direction = new Vector3(entity.direction.y, -entity.direction.z, entity.direction.x);）
+    - xyz分别为roll、pitch、yaw
+  - Cocos Creator:
+    - 位置无需修改，cocos手系和Three.js一致
+    - 因为cocos 模型坐标系是-z朝外，所以需要 +180
+  - Godot
+    - 位置无需修改，Godot手系和Three.js一致
+    - 因为Godot 模型坐标系是-z朝外，所以需要 +180
 - [feat] navmesh 周边工具，一个web端的navmesh生成工具（https://navmesh.kbelab.com/） [Issue #58](https://github.com/KBEngineLab/KBEngine-Nex/issues/58)
 - [feat] mongodb接入 [Issue #59](https://github.com/KBEngineLab/KBEngine-Nex/issues/59)
 - [feat] 原生c++ sdk [Issue #60](https://github.com/KBEngineLab/KBEngine-Nex/issues/60)

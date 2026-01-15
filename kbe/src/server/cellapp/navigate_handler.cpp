@@ -147,11 +147,21 @@ namespace KBEngine
         if (!useDetour_)
             return MoveToPointHandler::update();
 
-        if (isDestroyed_ || !pController_ || !pController_->pEntity() || !navHandle_)
+
+
+        if (isDestroyed_)
         {
             delete this;
             return false;
         }
+
+        if (!pController_ || !pController_->pEntity() || !navHandle_)
+        {
+            requestMoveFailure();
+            delete this;
+            return false;
+        }
+
 
         Entity* pEntity = pController_->pEntity();
         Py_INCREF(pEntity);
@@ -173,7 +183,7 @@ namespace KBEngine
 
         if (straightPath_.empty())
         {
-            requestMoveFailure();
+            requestMoveOver(oldPos);
             Py_DECREF(pEntity);
             delete this;
             return false;
@@ -215,9 +225,22 @@ namespace KBEngine
 
         if (dist < 0.05f)
         {
+            // 推进路径索引，避免卡死
+            currentPathIndex_++;
+
+            // 如果已经是最后一个点
+            if (currentPathIndex_ >= (int)straightPath_.size())
+            {
+                requestMoveOver(currPos);
+                Py_DECREF(pEntity);
+                delete this;
+                return false;
+            }
+
             Py_DECREF(pEntity);
-            return true;  // 太小就不动
+            return true;
         }
+
 
         KBEVec3Normalize(&moveDir, &moveDir);
         moveDir *= velocity_;
