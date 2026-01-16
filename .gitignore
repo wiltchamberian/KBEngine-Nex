@@ -196,8 +196,3 @@ kbe/tools/server/guiconsole/python313.dll
 
 
 kbe/res/sdk_templates/client/ue4/Source/KBEnginePlugins/Engine/.vscode
-kbengine_demos_assets-def
-balls_server_assets
-kbengine_demos_assets
-*server_assets*
-*demo*_assets*
